@@ -15,10 +15,15 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone)]
+pub enum Value {
+    Bool(bool),
+    Int(i32),
+    Real(f32),
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
-    ConstInt(i32),
-    ConstReal(f32),
-    ConstBool(bool),
+    Value(Value),
     UnOp(UnOp, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     Pre(Box<Expr>),

@@ -229,7 +229,7 @@ ConstBool: bool = {
 }
 
 ConstValue: ast::Expr = {
-    ConstInt => ast::Expr::ConstInt(<>),
-    ConstReal => ast::Expr::ConstReal(<>),
-    ConstBool => ast::Expr::ConstBool(<>),
+    ConstInt => ast::Expr::Value(ast::Value::Int(<>)),
+    ConstReal => ast::Expr::Value(ast::Value::Real(<>)),
+    ConstBool => ast::Expr::Value(ast::Value::Bool(<>)),
 }
