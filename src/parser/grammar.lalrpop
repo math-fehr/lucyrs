@@ -1,5 +1,6 @@
 use std::str::FromStr;
-use super::ast;
+use crate::parser::ast::{Node,Expr};
+use crate::ast::{Type,Value,UnOp,BinOp};
 
 grammar;
 
@@ -54,10 +55,10 @@ Ident: String = {
 //   |_| \__, | .__/ \___|
 //       |___/|_|         
 
-Type: ast::Type = {
-    "int" => ast::Type::Int,
-    "real" => ast::Type::Real,
-    "bool" => ast::Type::Bool,
+Type: Type = {
+    "int" => Type::Int,
+    "real" => Type::Real,
+    "bool" => Type::Bool,
 }
 
 //  _____ _ _      
@@ -66,7 +67,7 @@ Type: ast::Type = {
 // |  _| | | |  __/
 // |_|   |_|_|\___|
 
-pub File: Vec<ast::Node> = {
+pub File: Vec<Node> = {
     <n:(Node)*> => n
 }
 
@@ -76,11 +77,11 @@ pub File: Vec<ast::Node> = {
 // | |\  | (_) | (_| |  __/
 // |_| \_|\___/ \__,_|\___|
 
-Node: ast::Node = {
+Node: Node = {
     "node" <i:Ident> "(" <ip:InParams> ")"
     "returns" "(" <op:ParamList> ")" ";"
     <lp:LocalParams> "let" <el:Eq+> "tel" ";"? => {
-        let flatten = |v:Vec<(Vec<String>,ast::Type)>| {
+        let flatten = |v:Vec<(Vec<String>,Type)>| {
             let mut vp = vec![];
             for sub_v in v {
                 let t = sub_v.1;
@@ -93,16 +94,16 @@ Node: ast::Node = {
         let ip = flatten(ip);
         let op = flatten(op);
         let lp = flatten(lp);
-        ast::Node{name:i, in_params:ip, out_params:op, local_params:lp, eq_list:el}
+        Node{name:i, in_params:ip, out_params:op, local_params:lp, eq_list:el}
     }
 }
 
-LocalParams: Vec<(Vec<String>, ast::Type)> = {
+LocalParams: Vec<(Vec<String>, Type)> = {
     "var" <ParamListSemiCol> => <>,
     () => vec![],
 }
 
-InParams: Vec<(Vec<String>, ast::Type)> = {
+InParams: Vec<(Vec<String>, Type)> = {
     <pl:ParamList?> => { if let Some(t) = pl {
             t
         } else {
@@ -111,19 +112,19 @@ InParams: Vec<(Vec<String>, ast::Type)> = {
     }
 }
 
-ParamListSemiCol: Vec<(Vec<String>, ast::Type)> = {
+ParamListSemiCol: Vec<(Vec<String>, Type)> = {
     <p:(<Param> ";")+> => p
 }
 
-ParamList: Vec<(Vec<String>, ast::Type)> = {
+ParamList: Vec<(Vec<String>, Type)> = {
     SemiCol<Param> => <>
 }
 
-Param: (Vec<String>,ast::Type) = {
+Param: (Vec<String>,Type) = {
     <i:Comma<Ident>> ":" <t:Type> => (i,t)
 }
 
-Eq: (Vec<String>, ast::Expr) = {
+Eq: (Vec<String>, Expr) = {
     <i:Ident> "=" <e:Expr> ";" => (vec![i],e),
     "(" <v:Comma<Ident>> ")" "=" <e:Expr> ";" => (v,e),
 }
@@ -135,81 +136,81 @@ Eq: (Vec<String>, ast::Expr) = {
 // |_____/_/\_\ .__/|_|   
 //            |_|         
 
-Expr: ast::Expr = {
+Expr: Expr = {
     IfThenElse => <>,
 }
 
 
-IfThenElse: ast::Expr = {
+IfThenElse: Expr = {
     Arrow => <>,
-    "if" <i:Expr> "then" <t:Expr> "else" <e:Expr> => ast::Expr::IfThenElse(box i, box t, box e),
+    "if" <i:Expr> "then" <t:Expr> "else" <e:Expr> => Expr::IfThenElse(box i, box t, box e),
 }
 
 
-Arrow: ast::Expr = {
+Arrow: Expr = {
     Impl => <>,
-    <l:Arrow> "->" <r:Impl> => ast::Expr::Arrow(box l, box r),
+    <l:Arrow> "->" <r:Impl> => Expr::Arrow(box l, box r),
 }
 
 
-Impl: ast::Expr = {
+Impl: Expr = {
     Or => <>,
-    <l:Or> "=>" <r:Impl> => ast::Expr::BinOp(ast::BinOp::Impl, box l, box r),
+    <l:Or> "=>" <r:Impl> => Expr::BinOp(BinOp::Impl, box l, box r),
 }
 
 
-Or: ast::Expr = {
+Or: Expr = {
     And => <>,
-    <l:Comp> "or" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Or, box l, box r),
+    <l:Comp> "or" <r:Comp> => Expr::BinOp(BinOp::Or, box l, box r),
 }
 
 
-And: ast::Expr = {
+And: Expr = {
     Comp => <>,
-    <l:Comp> "and" <r:Comp> => ast::Expr::BinOp(ast::BinOp::And, box l, box r),
+    <l:Comp> "and" <r:Comp> => Expr::BinOp(BinOp::And, box l, box r),
 }
 
 
-Comp: ast::Expr = {
+Comp: Expr = {
     Add => <>,
-    <l:Add> "<" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Lt, box l, box r),
-    <l:Add> "<=" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Le, box l, box r),
-    <l:Add> ">" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Gt, box l, box r),
-    <l:Add> ">=" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Ge, box l, box r),
-    <l:Add> "<>" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Neq, box l, box r),
-    <l:Add> "=" <r:Comp> => ast::Expr::BinOp(ast::BinOp::Eq, box l, box r),
+    <l:Add> "<" <r:Comp> => Expr::BinOp(BinOp::Lt, box l, box r),
+    <l:Add> "<=" <r:Comp> => Expr::BinOp(BinOp::Le, box l, box r),
+    <l:Add> ">" <r:Comp> => Expr::BinOp(BinOp::Gt, box l, box r),
+    <l:Add> ">=" <r:Comp> => Expr::BinOp(BinOp::Ge, box l, box r),
+    <l:Add> "<>" <r:Comp> => Expr::BinOp(BinOp::Neq, box l, box r),
+    <l:Add> "=" <r:Comp> => Expr::BinOp(BinOp::Eq, box l, box r),
 }
 
 
-Add: ast::Expr = {
+Add: Expr = {
     Mul => <>,
-    <l:Mul> "+" <r:Add> => ast::Expr::BinOp(ast::BinOp::Add, box l, box r),
-    <l:Mul> "-" <r:Add> => ast::Expr::BinOp(ast::BinOp::Sub, box l, box r),
+    <l:Mul> "+" <r:Add> => Expr::BinOp(BinOp::Add, box l, box r),
+    <l:Mul> "-" <r:Add> => Expr::BinOp(BinOp::Sub, box l, box r),
 }
 
 
-Mul: ast::Expr = {
+Mul: Expr = {
     PreNot => <>,
-    <l:PreNot> "*" <r:Mul> => ast::Expr::BinOp(ast::BinOp::Mul, box l, box r),
-    <l:PreNot> "/" <r:Mul> => ast::Expr::BinOp(ast::BinOp::Div, box l, box r),
-    <l:PreNot> "div" <r:Mul> => ast::Expr::BinOp(ast::BinOp::Div, box l, box r),
-    <l:PreNot> "mod" <r:Mul> => ast::Expr::BinOp(ast::BinOp::Mod, box l, box r),
+    <l:PreNot> "*" <r:Mul> => Expr::BinOp(BinOp::Mul, box l, box r),
+    <l:PreNot> "/" <r:Mul> => Expr::BinOp(BinOp::Div, box l, box r),
+    <l:PreNot> "div" <r:Mul> => Expr::BinOp(BinOp::Div, box l, box r),
+    <l:PreNot> "mod" <r:Mul> => Expr::BinOp(BinOp::Mod, box l, box r),
 }
 
 
-PreNot: ast::Expr = {
+PreNot: Expr = {
     Value => <>,
-    "not" <PreNot> => ast::Expr::UnOp(ast::UnOp::Not, box <>),
-    "pre" <PreNot> => ast::Expr::Pre(box <>),
-    "-" <PreNot> => ast::Expr::UnOp(ast::UnOp::UMinus, box <>),
+    "not" <PreNot> => Expr::UnOp(UnOp::Not, box <>),
+    "pre" <PreNot> => Expr::Pre(box <>),
+    "-" <PreNot> => Expr::UnOp(UnOp::UMinus, box <>),
 }
 
 
-Value: ast::Expr = {
+Value: Expr = {
     "(" <Expr> ")" => <>,
     ConstValue => <>,
-    Ident => ast::Expr::Var(<>),
-    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => ast::Expr::FunCall(i,v),
+    Ident => Expr::Var(<>),
+    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v),
 }
 
 //   ____                _ __     __    _            
@@ -228,8 +229,8 @@ ConstBool: bool = {
     "false" => false,
 }
 
-ConstValue: ast::Expr = {
-    ConstInt => ast::Expr::Value(ast::Value::Int(<>)),
-    ConstReal => ast::Expr::Value(ast::Value::Real(<>)),
-    ConstBool => ast::Expr::Value(ast::Value::Bool(<>)),
+ConstValue: Expr = {
+    ConstInt => Expr::Value(Value::Int(<>)),
+    ConstReal => Expr::Value(Value::Real(<>)),
+    ConstBool => Expr::Value(Value::Bool(<>)),
 }

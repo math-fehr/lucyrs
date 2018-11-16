@@ -1,3 +1,5 @@
+use crate::ast::{Type,Value,UnOp,BinOp};
+
 #[derive(Debug, Clone)]
 pub struct Node {
     pub name: String,
@@ -5,20 +7,6 @@ pub struct Node {
     pub out_params: Vec<(String, Type)>,
     pub local_params: Vec<(String, Type)>,
     pub eq_list: Vec<(Vec<String>, Expr)>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Type {
-    Int,
-    Real,
-    Bool,
-}
-
-#[derive(Debug, Clone)]
-pub enum Value {
-    Bool(bool),
-    Int(i32),
-    Real(f32),
 }
 
 #[derive(Debug, Clone)]
@@ -31,29 +19,4 @@ pub enum Expr {
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>),
-}
-
-#[derive(Debug, Clone)]
-pub enum BinOp {
-    Lt,
-    Le,
-    Gt,
-    Ge,
-    Neq,
-    Eq,
-    Or,
-    And,
-    Mul,
-    Div,
-    Mod,
-    Add,
-    Sub,
-    Impl,
-    Arrow,
-}
-
-#[derive(Debug, Clone)]
-pub enum UnOp {
-    Not,
-    UMinus,
 }
