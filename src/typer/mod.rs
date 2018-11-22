@@ -3,7 +3,7 @@ use crate::ast::{BinOp, Type, UnOp, Value};
 use crate::parser::ast;
 use std::collections::HashMap;
 
-mod typed_ast;
+pub mod typed_ast;
 
 struct Context<'a> {
     variables: &'a HashMap<String, Type>,
@@ -12,12 +12,15 @@ struct Context<'a> {
 
 pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
     let mut functions = HashMap::new();
-    let take_types = |vec: &Vec<(String, Type)>| { vec.iter().map(|(_,t)| {t.clone()}).collect()};
+    let take_types = |vec: &Vec<(String, Type)>| vec.iter().map(|(_, t)| t.clone()).collect();
     let mut add_function = |node: &ast::Node| -> Result<(), String> {
         if functions.contains_key(&node.name) {
             Err(format!("Node {} was declared twice", node.name))
         } else {
-            functions.insert(node.name.clone(), (take_types(&node.in_params), take_types(&node.out_params)));
+            functions.insert(
+                node.name.clone(),
+                (take_types(&node.in_params), take_types(&node.out_params)),
+            );
             Ok(())
         }
     };
@@ -31,7 +34,10 @@ pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
     Ok(typed_nodes)
 }
 
-pub fn type_node(node: ast::Node, functions: &HashMap<String, (Vec<Type>, Vec<Type>)>) -> Result<Node, String> {
+pub fn type_node(
+    node: ast::Node,
+    functions: &HashMap<String, (Vec<Type>, Vec<Type>)>,
+) -> Result<Node, String> {
     let mut variables = HashMap::new();
     let mut add_variables = |list: &Vec<(String, Type)>| -> Result<(), String> {
         for (ident, typ) in list {
