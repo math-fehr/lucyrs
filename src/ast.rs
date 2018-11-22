@@ -4,17 +4,17 @@ pub enum BinOp {
     Le,
     Gt,
     Ge,
-    Neq,
-    Eq,
-    Or,
-    And,
     Mul,
     Div,
-    Mod,
     Add,
     Sub,
+    Mod,
+    Or,
+    Xor,
+    And,
     Impl,
-    Arrow,
+    Neq,
+    Eq,
 }
 
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ pub enum UnOp {
     UMinus,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
     Real,

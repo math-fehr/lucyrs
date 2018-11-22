@@ -160,14 +160,19 @@ Impl: Expr = {
 
 
 Or: Expr = {
+    Xor => <>,
+    <l:Xor> "or" <r:Or> => Expr::BinOp(BinOp::Or, box l, box r),
+}
+
+Xor: Expr = {
     And => <>,
-    <l:Comp> "or" <r:Comp> => Expr::BinOp(BinOp::Or, box l, box r),
+    <l:And> "xor" <r:Xor> => Expr::BinOp(BinOp::Xor, box l, box r),
 }
 
 
 And: Expr = {
     Comp => <>,
-    <l:Comp> "and" <r:Comp> => Expr::BinOp(BinOp::And, box l, box r),
+    <l:Comp> "and" <r:And> => Expr::BinOp(BinOp::And, box l, box r),
 }
 
 
