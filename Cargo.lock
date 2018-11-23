@@ -224,6 +224,7 @@ version = "0.1.0"
 dependencies = [
  "lalrpop 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lalrpop-util 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "petgraph 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
