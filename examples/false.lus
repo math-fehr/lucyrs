@@ -1,0 +1,5 @@
+node f(a,b: int) returns (c,d: int);
+let
+  d = c + a;
+  c = d * b;
+tel;
