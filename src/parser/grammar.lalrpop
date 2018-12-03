@@ -149,57 +149,57 @@ IfThenElse: Expr = {
 
 Arrow: Expr = {
     Impl => <>,
-    <l:Arrow> "->" <r:Impl> => Expr::Arrow(box l, box r),
+    <l:Impl> "->" <r:Arrow> => Expr::Arrow(box l, box r),
 }
 
 
 Impl: Expr = {
     Or => <>,
-    <l:Or> "=>" <r:Impl> => Expr::BinOp(BinOp::Impl, box l, box r),
+    <l:Impl> "=>" <r:Or> => Expr::BinOp(BinOp::Impl, box l, box r),
 }
 
 
 Or: Expr = {
     Xor => <>,
-    <l:Xor> "or" <r:Or> => Expr::BinOp(BinOp::Or, box l, box r),
+    <l:Or> "or" <r:Xor> => Expr::BinOp(BinOp::Or, box l, box r),
 }
 
 Xor: Expr = {
     And => <>,
-    <l:And> "xor" <r:Xor> => Expr::BinOp(BinOp::Xor, box l, box r),
+    <l:Xor> "xor" <r:And> => Expr::BinOp(BinOp::Xor, box l, box r),
 }
 
 
 And: Expr = {
     Comp => <>,
-    <l:Comp> "and" <r:And> => Expr::BinOp(BinOp::And, box l, box r),
+    <l:And> "and" <r:Comp> => Expr::BinOp(BinOp::And, box l, box r),
 }
 
 
 Comp: Expr = {
     Add => <>,
-    <l:Add> "<" <r:Comp> => Expr::BinOp(BinOp::Lt, box l, box r),
-    <l:Add> "<=" <r:Comp> => Expr::BinOp(BinOp::Le, box l, box r),
-    <l:Add> ">" <r:Comp> => Expr::BinOp(BinOp::Gt, box l, box r),
-    <l:Add> ">=" <r:Comp> => Expr::BinOp(BinOp::Ge, box l, box r),
-    <l:Add> "<>" <r:Comp> => Expr::BinOp(BinOp::Neq, box l, box r),
-    <l:Add> "=" <r:Comp> => Expr::BinOp(BinOp::Eq, box l, box r),
+    <l:Comp> "<" <r:Add> => Expr::BinOp(BinOp::Lt, box l, box r),
+    <l:Comp> "<=" <r:Add> => Expr::BinOp(BinOp::Le, box l, box r),
+    <l:Comp> ">" <r:Add> => Expr::BinOp(BinOp::Gt, box l, box r),
+    <l:Comp> ">=" <r:Add> => Expr::BinOp(BinOp::Ge, box l, box r),
+    <l:Comp> "<>" <r:Add> => Expr::BinOp(BinOp::Neq, box l, box r),
+    <l:Comp> "=" <r:Add> => Expr::BinOp(BinOp::Eq, box l, box r),
 }
 
 
 Add: Expr = {
     Mul => <>,
-    <l:Mul> "+" <r:Add> => Expr::BinOp(BinOp::Add, box l, box r),
-    <l:Mul> "-" <r:Add> => Expr::BinOp(BinOp::Sub, box l, box r),
+    <l:Add> "+" <r:Mul> => Expr::BinOp(BinOp::Add, box l, box r),
+    <l:Add> "-" <r:Mul> => Expr::BinOp(BinOp::Sub, box l, box r),
 }
 
 
 Mul: Expr = {
     PreNot => <>,
-    <l:PreNot> "*" <r:Mul> => Expr::BinOp(BinOp::Mul, box l, box r),
-    <l:PreNot> "/" <r:Mul> => Expr::BinOp(BinOp::Div, box l, box r),
-    <l:PreNot> "div" <r:Mul> => Expr::BinOp(BinOp::Div, box l, box r),
-    <l:PreNot> "mod" <r:Mul> => Expr::BinOp(BinOp::Mod, box l, box r),
+    <l:Mul> "*" <r:PreNot> => Expr::BinOp(BinOp::Mul, box l, box r),
+    <l:Mul> "/" <r:PreNot> => Expr::BinOp(BinOp::Div, box l, box r),
+    <l:Mul> "div" <r:PreNot> => Expr::BinOp(BinOp::Div, box l, box r),
+    <l:Mul> "mod" <r:PreNot> => Expr::BinOp(BinOp::Mod, box l, box r),
 }
 
 
