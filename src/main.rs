@@ -3,10 +3,10 @@
 
 use std::env;
 
-pub mod parser;
 pub mod ast;
-pub mod typer;
 pub mod causality;
+pub mod parser;
+pub mod typer;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

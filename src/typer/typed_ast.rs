@@ -1,4 +1,4 @@
-use crate::ast::{Type,Value,UnOp,BinOp};
+use crate::ast::{BinOp, Type, UnOp, Value};
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -6,7 +6,7 @@ pub struct Node {
     pub in_params: Vec<(String, Type)>,
     pub out_params: Vec<(String, Type)>,
     pub local_params: Vec<(String, Type)>,
-    pub eq_list: Vec<(Vec<String>, Expr)>
+    pub eq_list: Vec<(Vec<String>, Expr)>,
 }
 
 #[derive(Debug, Clone)]

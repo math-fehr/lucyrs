@@ -1,4 +1,4 @@
-use crate::ast::{Type,Value,UnOp,BinOp};
+use crate::ast::{BinOp, Type, UnOp, Value};
 
 #[derive(Debug, Clone)]
 pub struct Node {
