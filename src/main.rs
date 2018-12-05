@@ -5,7 +5,9 @@ use std::env;
 
 pub mod ast;
 pub mod causality;
+pub mod minils_ast;
 pub mod parser;
+pub mod to_minils;
 pub mod typer;
 
 fn main() {
@@ -28,4 +30,6 @@ fn main() {
     } else {
         print!("Causality not okay!");
     }
+
+    let minils_node = typed_nodes.into_iter().map(to_minils::to_minils);
 }

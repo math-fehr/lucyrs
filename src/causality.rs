@@ -62,6 +62,7 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
             v.append(&mut get_var_deps(&e2, node));
             v
         }
+        Fby(box e1, _) => get_var_deps(&e1, node),
         IfThenElse(box e1, box e2, box e3) => {
             let mut v = get_var_deps(&e1, node);
             v.append(&mut get_var_deps(&e2, node));

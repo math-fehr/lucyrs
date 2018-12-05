@@ -10,12 +10,16 @@ pub struct Node {
 }
 
 #[derive(Debug, Clone)]
-pub enum Expr {
+pub struct Expr {
+    pub expr: BaseExpr,
+    pub typ: Vec<Type>,
+}
+
+#[derive(Debug, Clone)]
+pub enum BaseExpr {
     Value(Value),
     UnOp(UnOp, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
-    Pre(Box<Expr>),
-    Arrow(Box<Expr>, Box<Expr>),
     Fby(Box<Expr>, Box<Expr>),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),

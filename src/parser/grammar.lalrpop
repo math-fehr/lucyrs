@@ -126,7 +126,7 @@ Param: (Vec<String>,Type) = {
 
 Eq: (Vec<String>, Expr) = {
     <i:Ident> "=" <e:Expr> ";" => (vec![i],e),
-    "(" <v:Comma<Ident>> ")" "=" <e:Expr> ";" => (v,e),
+        "(" <v:Comma<Ident>> ")" "=" <e:Expr> ";" => (v,e),
 }
 
 //  _____                 
@@ -150,6 +150,7 @@ IfThenElse: Expr = {
 Arrow: Expr = {
     Impl => <>,
     <l:Impl> "->" <r:Arrow> => Expr::Arrow(box l, box r),
+    <l:Impl> "fby" <r:Arrow> => Expr::Fby(box l, box r),
 }
 
 
