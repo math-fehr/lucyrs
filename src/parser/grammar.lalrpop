@@ -150,7 +150,7 @@ IfThenElse: Expr = {
 Arrow: Expr = {
     Impl => <>,
     <l:Impl> "->" <r:Arrow> => Expr::Arrow(box l, box r),
-    <l:Impl> "fby" <r:Arrow> => Expr::Fby(box l, box r),
+    <l:ConstValue> "fby" <r:Arrow> => Expr::Fby(l, box r),
 }
 
 
@@ -214,7 +214,7 @@ PreNot: Expr = {
 
 Value: Expr = {
     "(" <Expr> ")" => <>,
-    ConstValue => <>,
+    ConstValue => Expr::Value(<>),
     Ident => Expr::Var(<>),
     <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v),
 }
@@ -235,8 +235,8 @@ ConstBool: bool = {
     "false" => false,
 }
 
-ConstValue: Expr = {
-    ConstInt => Expr::Value(Value::Int(<>)),
-    ConstReal => Expr::Value(Value::Real(<>)),
-    ConstBool => Expr::Value(Value::Bool(<>)),
+ConstValue: Value = {
+    ConstInt => Value::Int(<>),
+    ConstReal => Value::Real(<>),
+    ConstBool => Value::Bool(<>),
 }

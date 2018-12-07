@@ -34,10 +34,9 @@ fn to_minils_expr(expr: typ::Expr) -> minils::Expr {
         }
         typ::BaseExpr::Pre(box e) => to_minils_pre(e),
         typ::BaseExpr::Arrow(box e1, box e2) => to_minils_arrow(e1, e2),
-        typ::BaseExpr::Fby(box e1, box e2) => {
-            let e1 = to_minils_expr(e1);
+        typ::BaseExpr::Fby(e1, box e2) => {
             let e2 = to_minils_expr(e2);
-            minils::BaseExpr::Fby(box e1, box e2)
+            minils::BaseExpr::Fby(e1, box e2)
         },
         typ::BaseExpr::IfThenElse(box e1, box e2, box e3) => {
             let e1 = to_minils_expr(e1);
@@ -65,27 +64,20 @@ fn to_minils_pre(expr: typ::Expr) -> minils::BaseExpr {
         Type::Bool => Value::Bool(false),
         Type::Real => Value::Real(std::f32::NAN),
     };
-    let expr1 = minils::Expr {
-        typ: expr2.typ.clone(),
-        expr: minils::BaseExpr::Value(value),
-    };
-    minils::BaseExpr::Fby(box expr1, box expr2)
+    minils::BaseExpr::Fby(value, box expr2)
 }
 
 fn to_minils_arrow(expr1: typ::Expr, expr2: typ::Expr) -> minils::BaseExpr {
     let expr1 = to_minils_expr(expr1);
     let expr2 = to_minils_expr(expr2);
-    let true_expr = minils::Expr{
-        typ: vec![Type::Bool],
-        expr: minils::BaseExpr::Value(Value::Bool(true))
-    };
+    let true_value = Value::Bool(true);
     let false_expr = minils::Expr{
         typ: vec![Type::Bool],
         expr: minils::BaseExpr::Value(Value::Bool(true))
     };
     let cond = minils::Expr {
         typ: vec![Type::Bool],
-        expr: minils::BaseExpr::Fby(box true_expr, box false_expr)
+        expr: minils::BaseExpr::Fby(true_value, box false_expr)
     };
     minils::BaseExpr::IfThenElse(box cond, box expr1, box expr2)
 }

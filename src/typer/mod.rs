@@ -81,8 +81,8 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         ast::Expr::UnOp(op, expr) => type_unop(op, *expr, context),
         ast::Expr::BinOp(op, lhs, rhs) => type_binop(op, *lhs, *rhs, context),
         ast::Expr::Pre(expr) => type_pre(*expr, context),
-        ast::Expr::Arrow(expr1, expr2) => type_arrow_fby(*expr1, *expr2, context),
-        ast::Expr::Fby(expr1, expr2) => type_arrow_fby(*expr1, *expr2, context),
+        ast::Expr::Arrow(expr1, expr2) => type_arrow(*expr1, *expr2, context),
+        ast::Expr::Fby(v, expr2) => type_fby(v, *expr2, context),
         ast::Expr::IfThenElse(e_cond, e_then, e_else) => {
             type_ifthenelse(*e_cond, *e_then, *e_else, context)
         }
@@ -203,7 +203,7 @@ fn type_pre(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
     })
 }
 
-fn type_arrow_fby(lhs: ast::Expr, rhs: ast::Expr, context: &Context) -> Result<Expr, String> {
+fn type_arrow(lhs: ast::Expr, rhs: ast::Expr, context: &Context) -> Result<Expr, String> {
     let typed_lhs = type_expr(lhs, context)?;
     let typed_rhs = type_expr(rhs, context)?;
     if typed_lhs.typ != typed_rhs.typ {
@@ -218,6 +218,23 @@ fn type_arrow_fby(lhs: ast::Expr, rhs: ast::Expr, context: &Context) -> Result<E
         })
     }
 }
+
+fn type_fby(init: Value, rhs: ast::Expr, context: &Context) -> Result<Expr, String> {
+    let typed_rhs = type_expr(rhs, context)?;
+    let typed_init = type_value(init.clone());
+    if typed_init.typ != typed_rhs.typ {
+        Err(String::from(
+            "The type of the left hand side and the right hand side of an arrow or a fby should be equal",
+        ))
+    } else {
+        let typ = typed_init.typ.clone();
+        Ok(Expr {
+            expr: BaseExpr::Fby(init, box typed_rhs),
+            typ,
+        })
+    }
+}
+
 
 fn type_ifthenelse(
     expr_cond: ast::Expr,

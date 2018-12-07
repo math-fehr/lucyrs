@@ -16,7 +16,7 @@ pub enum Expr {
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     Pre(Box<Expr>),
     Arrow(Box<Expr>, Box<Expr>),
-    Fby(Box<Expr>, Box<Expr>),
+    Fby(Value, Box<Expr>),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>),
