@@ -9,6 +9,7 @@ pub mod minils_ast;
 pub mod parser;
 pub mod to_minils;
 pub mod typer;
+pub mod ident;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
