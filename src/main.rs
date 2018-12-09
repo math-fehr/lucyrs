@@ -5,11 +5,13 @@ use std::env;
 
 pub mod ast;
 pub mod causality;
+pub mod ident;
 pub mod minils_ast;
+pub mod normalization;
+pub mod normalized_ast;
 pub mod parser;
 pub mod to_minils;
 pub mod typer;
-pub mod ident;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -30,7 +32,14 @@ fn main() {
         print!("Causality okay!");
     } else {
         print!("Causality not okay!");
+        return;
     }
 
-    let minils_node = typed_nodes.into_iter().map(to_minils::to_minils);
+    let minils_nodes: Vec<minils_ast::Node> =
+        typed_nodes.into_iter().map(to_minils::to_minils).collect();
+
+    let _normalized_nodes: Vec<normalized_ast::Node> = minils_nodes
+        .into_iter()
+        .map(normalization::normalize)
+        .collect();
 }
