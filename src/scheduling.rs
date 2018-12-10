@@ -1,0 +1,101 @@
+use crate::normalized_ast::*;
+
+use petgraph::graphmap::GraphMap;
+use std::collections::HashSet;
+
+pub fn schedule(mut node: Node) -> Node {
+    // When this function is called, the program should
+    // not define a variable twice
+    assert!(check_multiple_definition(&node));
+
+    schedule_node(&mut node);
+    node
+}
+
+fn check_multiple_definition(node: &Node) -> bool {
+    let mut set = HashSet::new();
+    for eq in &node.eq_list {
+        for ident in get_defined_vars(eq) {
+            if set.get(ident).is_some() {
+                return false;
+            }
+            set.insert(ident);
+        }
+    }
+    true
+}
+
+fn schedule_node(node: &mut Node) {
+    let mut causality_graph = GraphMap::<usize, (), petgraph::Directed>::new();
+    for i in 0..(node.eq_list.len() - 1) {
+        causality_graph.add_node(i);
+    }
+    let defined_vars: Vec<Vec<&str>> = node.eq_list.iter().map(get_defined_vars).collect();
+    let var_dependencies: Vec<Vec<&str>> = node.eq_list.iter().map(get_var_dependencies_eq).collect();
+    for i in 0..(node.eq_list.len() - 1) {
+        for j in 0..(node.eq_list.len() - 1) {
+            for defined_var in &defined_vars[i] {
+                for var in &var_dependencies[i] {
+                    if var == defined_var {
+                        causality_graph.add_edge(i,j,());
+                    }
+                }
+            }
+        }
+    }
+    let topo_sort = petgraph::algo::toposort(&causality_graph, None);
+    assert!(topo_sort.is_ok());
+    let topo_sort = topo_sort.unwrap();
+    let mut ordered_eq_list = vec![];
+    for &i in topo_sort.iter().rev() {
+        ordered_eq_list.push(node.eq_list[i].clone());
+    }
+    node.eq_list = ordered_eq_list;
+}
+
+fn get_defined_vars(eq: &Eq) -> Vec<&str> {
+    match &eq.eq {
+        ExprEqBase::Fby(s, _, _) => vec![&s],
+        ExprEqBase::FunCall(v, _, _) => v.iter().map(|s| s.as_str()).collect(),
+        ExprEqBase::ExprCA(s, _) => vec![&s],
+    }
+}
+
+fn get_var_dependencies_eq(eq: &Eq) -> Vec<&str> {
+    match &eq.eq {
+        ExprEqBase::Fby(_, _, _) => vec![],
+        ExprEqBase::FunCall(_, _, params) => params
+            .iter()
+            .map(get_var_dependencies_a)
+            .flatten()
+            .collect(),
+        ExprEqBase::ExprCA(_, box ca) => get_var_dependencies_ca(&ca),
+    }
+}
+
+fn get_var_dependencies_ca(ca: &ExprCA) -> Vec<&str> {
+    match &ca.expr {
+        ExprCABase::Merge(s, box ca_1, box ca_2) => {
+            let mut vars_1 = get_var_dependencies_ca(&ca_1);
+            let mut vars_2 = get_var_dependencies_ca(&ca_2);
+            vars_1.append(&mut vars_2);
+            vars_1.push(s);
+            vars_1
+        }
+        ExprCABase::ExprA(box a) => get_var_dependencies_a(&a),
+    }
+}
+
+fn get_var_dependencies_a(a: &ExprA) -> Vec<&str> {
+    match &a.expr {
+        ExprABase::Value(_) => vec![],
+        ExprABase::Var(s) => vec![&s],
+        ExprABase::UnOp(_, box a) => get_var_dependencies_a(&a),
+        ExprABase::BinOp(_, box a_1, box a_2) => {
+            let mut vars_1 = get_var_dependencies_a(&a_1);
+            let mut vars_2 = get_var_dependencies_a(&a_2);
+            vars_1.append(&mut vars_2);
+            vars_1
+        }
+    }
+}

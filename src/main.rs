@@ -10,6 +10,7 @@ pub mod minils_ast;
 pub mod normalization;
 pub mod normalized_ast;
 pub mod parser;
+pub mod scheduling;
 pub mod to_minils;
 pub mod typer;
 
@@ -21,7 +22,7 @@ fn main() {
     // Typing
     let typed_nodes = typer::annotate_types(nodes);
     if let Err(message) = typed_nodes {
-        print!("Typing Error: {}", message);
+        println!("Typing Error: {}", message);
         return;
     }
     let typed_nodes = typed_nodes.unwrap();
@@ -29,17 +30,24 @@ fn main() {
     // Causality checking
     // TODO improve message
     if causality::check_causality(&typed_nodes) {
-        print!("Causality okay!");
+        println!("Causality okay!");
     } else {
-        print!("Causality not okay!");
+        println!("Causality not okay!");
         return;
     }
 
     let minils_nodes: Vec<minils_ast::Node> =
         typed_nodes.into_iter().map(to_minils::to_minils).collect();
 
-    let _normalized_nodes: Vec<normalized_ast::Node> = minils_nodes
+    let normalized_nodes: Vec<normalized_ast::Node> = minils_nodes
         .into_iter()
         .map(normalization::normalize)
         .collect();
+
+    let scheduled_nodes: Vec<normalized_ast::Node> = normalized_nodes
+        .into_iter()
+        .map(scheduling::schedule)
+        .collect();
+
+    println!("{:#?}", scheduled_nodes);
 }
