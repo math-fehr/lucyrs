@@ -26,7 +26,7 @@ pub fn normalize(node: minils::Node) -> norm::Node {
 
 fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut norm::Node) {
     let typ_ = expr.typ.clone();
-    let mut defined_params = vec![];
+    let mut defined_params;
     let expr_ = match expr.expr {
         minils::BaseExpr::FunCall(fun, params) => {
             let params = params
