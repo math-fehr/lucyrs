@@ -9,9 +9,11 @@ pub mod ident;
 pub mod minils_ast;
 pub mod normalization;
 pub mod normalized_ast;
+pub mod obc_ast;
 pub mod parser;
 pub mod scheduling;
 pub mod to_minils;
+pub mod to_obc;
 pub mod typer;
 
 fn main() {
@@ -49,5 +51,8 @@ fn main() {
         .map(scheduling::schedule)
         .collect();
 
-    println!("{:#?}", scheduled_nodes);
+    let obc_machines: Vec<obc_ast::Machine> =
+        scheduled_nodes.into_iter().map(to_obc::to_obc).collect();
+
+    println!("{:#?}", obc_machines);
 }
