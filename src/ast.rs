@@ -36,3 +36,13 @@ pub enum Value {
     Int(i32),
     Real(f32),
 }
+
+impl Value {
+    pub fn get_type(&self) -> Type {
+        match &self {
+            Value::Bool(_) => Type::Bool,
+            Value::Int(_) => Type::Int,
+            Value::Real(_) => Type::Real,
+        }
+    }
+}
