@@ -15,27 +15,25 @@ pub mod scheduling;
 pub mod to_minils;
 pub mod to_obc;
 pub mod typer;
+pub mod obc_to_rust;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
+    let node_name = &args[2];
     let nodes = parser::parse_file(filename);
 
     // Typing
     let typed_nodes = typer::annotate_types(nodes);
     if let Err(message) = typed_nodes {
-        println!("Typing Error: {}", message);
-        return;
+        panic!("Typing Error: {}", message);
     }
     let typed_nodes = typed_nodes.unwrap();
 
     // Causality checking
     // TODO improve message
-    if causality::check_causality(&typed_nodes) {
-        println!("Causality okay!");
-    } else {
-        println!("Causality not okay!");
-        return;
+    if !causality::check_causality(&typed_nodes) {
+        panic!("Causality not okay!");
     }
 
     let minils_nodes: Vec<minils_ast::Node> =
@@ -54,5 +52,7 @@ fn main() {
     let obc_machines: Vec<obc_ast::Machine> =
         scheduled_nodes.into_iter().map(to_obc::to_obc).collect();
 
-    println!("{:#?}", obc_machines);
+    let rust_code = obc_to_rust::obc_to_rust(&obc_machines, node_name);
+
+    println!("{}",rust_code);
 }
