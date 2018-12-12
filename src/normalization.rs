@@ -105,7 +105,7 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
             norm::ExprABase::Var(new_ident.get_ident())
         }
         minils::BaseExpr::Value(v) => norm::ExprABase::Value(v),
-        minils::BaseExpr::Var(s) => norm::ExprABase::Var(s),
+        minils::BaseExpr::Var(s) => norm::ExprABase::Var(ident::gen_ident(s,0)),
         minils::BaseExpr::UnOp(op, box expr) => {
             let expr = normalize_a(ident, expr, node);
             norm::ExprABase::UnOp(op, box expr)
