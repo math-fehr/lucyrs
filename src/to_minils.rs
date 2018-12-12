@@ -73,7 +73,7 @@ fn to_minils_arrow(expr1: typ::Expr, expr2: typ::Expr) -> minils::BaseExpr {
     let true_value = Value::Bool(true);
     let false_expr = minils::Expr{
         typ: vec![Type::Bool],
-        expr: minils::BaseExpr::Value(Value::Bool(true))
+        expr: minils::BaseExpr::Value(Value::Bool(false))
     };
     let cond = minils::Expr {
         typ: vec![Type::Bool],
