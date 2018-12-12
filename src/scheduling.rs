@@ -27,13 +27,13 @@ fn check_multiple_definition(node: &Node) -> bool {
 
 fn schedule_node(node: &mut Node) {
     let mut causality_graph = GraphMap::<usize, (), petgraph::Directed>::new();
-    for i in 0..(node.eq_list.len() - 1) {
+    for i in 0..node.eq_list.len() {
         causality_graph.add_node(i);
     }
     let defined_vars: Vec<Vec<&str>> = node.eq_list.iter().map(get_defined_vars).collect();
     let var_dependencies: Vec<Vec<&str>> = node.eq_list.iter().map(get_var_dependencies_eq).collect();
-    for i in 0..(node.eq_list.len() - 1) {
-        for j in 0..(node.eq_list.len() - 1) {
+    for i in 0..node.eq_list.len() {
+        for j in 0..node.eq_list.len() {
             for defined_var in &defined_vars[i] {
                 for var in &var_dependencies[i] {
                     if var == defined_var {
