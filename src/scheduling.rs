@@ -35,7 +35,7 @@ fn schedule_node(node: &mut Node) {
     for i in 0..node.eq_list.len() {
         for j in 0..node.eq_list.len() {
             for defined_var in &defined_vars[i] {
-                for var in &var_dependencies[i] {
+                for var in &var_dependencies[j] {
                     if var == defined_var {
                         causality_graph.add_edge(i,j,());
                     }
@@ -46,11 +46,7 @@ fn schedule_node(node: &mut Node) {
     let topo_sort = petgraph::algo::toposort(&causality_graph, None);
     assert!(topo_sort.is_ok());
     let topo_sort = topo_sort.unwrap();
-    let mut ordered_eq_list = vec![];
-    for &i in topo_sort.iter().rev() {
-        ordered_eq_list.push(node.eq_list[i].clone());
-    }
-    node.eq_list = ordered_eq_list;
+    node.eq_list = topo_sort.into_iter().map(|i| node.eq_list[i].clone()).collect();
 }
 
 fn get_defined_vars(eq: &Eq) -> Vec<&str> {
