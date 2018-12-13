@@ -14,6 +14,8 @@ pub enum Expr {
     Value(Value),
     UnOp(UnOp, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
+    When(Box<Expr>, String, bool),
+    Merge(String, Box<Expr>, Box<Expr>),
     Pre(Box<Expr>),
     Arrow(Box<Expr>, Box<Expr>),
     Fby(Value, Box<Expr>),

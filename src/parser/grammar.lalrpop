@@ -142,10 +142,20 @@ Expr: Expr = {
 
 
 IfThenElse: Expr = {
-    Arrow => <>,
+    Merge => <>,
     "if" <i:Expr> "then" <t:Expr> "else" <e:Expr> => Expr::IfThenElse(box i, box t, box e),
 }
 
+Merge: Expr = {
+    When => <>,
+    "merge" <i:Ident> <e1:Value> <e2:Value> => Expr::Merge(i, box e1, box e2),
+}
+
+When: Expr = {
+    Arrow => <>,
+    <l:When> "when" <i:Ident> => Expr::When(box l, i, true),
+    <l:When> "whenot" <i:Ident> => Expr::When(box l, i, false),
+}
 
 Arrow: Expr = {
     Impl => <>,
@@ -205,18 +215,22 @@ Mul: Expr = {
 
 
 PreNot: Expr = {
-    Value => <>,
+    FunCall => <>,
     "not" <PreNot> => Expr::UnOp(UnOp::Not, box <>),
     "pre" <PreNot> => Expr::Pre(box <>),
     "-" <PreNot> => Expr::UnOp(UnOp::UMinus, box <>),
 }
 
+FunCall: Expr = {
+    Value => <>,
+    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v),
+}
 
 Value: Expr = {
     "(" <Expr> ")" => <>,
     ConstValue => Expr::Value(<>),
     Ident => Expr::Var(<>),
-    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v),
+    
 }
 
 //   ____                _ __     __    _            

@@ -80,6 +80,8 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         ast::Expr::Value(v) => Ok(type_value(v)),
         ast::Expr::UnOp(op, expr) => type_unop(op, *expr, context),
         ast::Expr::BinOp(op, lhs, rhs) => type_binop(op, *lhs, *rhs, context),
+        ast::Expr::When(box expr, ck, b) => type_when(expr, ck, b, context),
+        ast::Expr::Merge(s, box e_true, box e_false) => type_merge(s, e_true, e_false, context),
         ast::Expr::Pre(expr) => type_pre(*expr, context),
         ast::Expr::Arrow(expr1, expr2) => type_arrow(*expr1, *expr2, context),
         ast::Expr::Fby(v, expr2) => type_fby(v, *expr2, context),
@@ -194,6 +196,45 @@ fn type_binop(
     }
 }
 
+fn type_when(expr: ast::Expr, ck: String, b: bool, context: &Context) -> Result<Expr, String> {
+    let typed_expr = type_expr(expr, context)?;
+    let typ = typed_expr.typ.clone();
+    if context.variables.get(&ck).is_none() {
+        return Err(String::from(
+            "The clock in a when construct should be a boolean",
+        ));
+    }
+    Ok(Expr {
+        expr: BaseExpr::When(box typed_expr, ck, b),
+        typ,
+    })
+}
+
+fn type_merge(
+    ck: String,
+    e_true: ast::Expr,
+    e_false: ast::Expr,
+    context: &Context,
+) -> Result<Expr, String> {
+    let typed_e_true = type_expr(e_true, context)?;
+    let typed_e_false = type_expr(e_false, context)?;
+    if typed_e_false.typ != typed_e_true.typ {
+        return Err(String::from(
+            "The type of the two expressions in a merge construct should have the same type",
+        ));
+    }
+    let typ = typed_e_false.typ.clone();
+    if context.variables.get(&ck).is_none() {
+        return Err(String::from(
+            "The clock in a merge construct should be a boolean",
+        ));
+    }
+    Ok(Expr {
+        expr: BaseExpr::Merge(ck, box typed_e_true, box typed_e_false),
+        typ,
+    })
+}
+
 fn type_pre(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
     let typed_expr = type_expr(expr, context)?;
     let typ = typed_expr.typ.clone();
@@ -234,7 +275,6 @@ fn type_fby(init: Value, rhs: ast::Expr, context: &Context) -> Result<Expr, Stri
         })
     }
 }
-
 
 fn type_ifthenelse(
     expr_cond: ast::Expr,
