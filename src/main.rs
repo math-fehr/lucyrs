@@ -36,6 +36,12 @@ fn main() {
     }
     let typed_nodes = typed_nodes.unwrap();
 
+    let clock_nodes = typer::type_clock::annotate_clocks(typed_nodes.clone());
+    if let Err(message) = clock_nodes {
+        panic!("Clock typing error: {}", message);
+    }
+    let clock_nodes = clock_nodes.unwrap();
+
     let minils_nodes: Vec<minils_ast::Node> =
         typed_nodes.into_iter().map(to_minils::to_minils).collect();
 

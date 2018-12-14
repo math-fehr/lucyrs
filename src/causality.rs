@@ -34,16 +34,16 @@ fn check_causality_node(node: &mut Node) -> bool {
     for i in 0..node.eq_list.len() {
         causality_graph.add_node(i);
     }
-    let defined_vars: Vec<Vec<&str>> = node
+    let var_dependencies: Vec<Vec<&str>> = node
         .eq_list
         .iter()
         .map(|(_, e)| get_var_deps(e, node))
         .collect();
-    let var_dependencies: Vec<&Vec<String>> = node.eq_list.iter().map(|(v, _)| v).collect();
+    let defined_vars: Vec<&Vec<String>> = node.eq_list.iter().map(|(v, _)| v).collect();
     for i in 0..node.eq_list.len() {
         for j in 0..node.eq_list.len() {
-            for defined_var in &defined_vars[i] {
-                for var in var_dependencies[j] {
+            for defined_var in defined_vars[i] {
+                for var in &var_dependencies[j] {
                     if var == defined_var {
                         causality_graph.add_edge(i, j, ());
                     }

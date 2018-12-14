@@ -4,6 +4,8 @@ use crate::parser::ast;
 use std::collections::HashMap;
 
 pub mod typed_ast;
+pub mod clock_typed_ast;
+pub mod type_clock;
 
 struct Context<'a> {
     variables: &'a HashMap<String, Type>,
