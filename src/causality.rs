@@ -65,7 +65,7 @@ fn check_causality_node(node: &mut Node) -> bool {
 
 fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
     match expr {
-        Value(_) | Pre(_) | Fby(_, _) => vec![],
+        Value(_) | Fby(_, _) => vec![],
         UnOp(_, box e) => get_var_deps(&e, node),
         BinOp(_, box e1, box e2) => {
             let mut v = get_var_deps(&e1, node);
@@ -81,11 +81,6 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
             let mut v = get_var_deps(&e1, node);
             v.append(&mut get_var_deps(&e2, node));
             v.push(ck);
-            v
-        }
-        Arrow(box e1, box e2) => {
-            let mut v = get_var_deps(&e1, node);
-            v.append(&mut get_var_deps(&e2, node));
             v
         }
         IfThenElse(box e1, box e2, box e3) => {

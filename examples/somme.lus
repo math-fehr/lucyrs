@@ -14,10 +14,10 @@ tel;
 node somme(a,b: bool) returns (v: bool);
 var carry: bool;
 let
-  (v, carry) = full_add(a, b, false -> pre carry);
+  (v, carry) = full_add(a, b, false fby carry);
 tel
   
 node check(a:bool) returns (ok: bool);
 let
-  ok = (somme(a,a)) = (false -> pre a);
+  ok = (somme(a,a)) = (false fby a);
 tel

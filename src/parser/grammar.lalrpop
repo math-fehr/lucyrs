@@ -159,7 +159,6 @@ When: Expr = {
 
 Arrow: Expr = {
     Impl => <>,
-    <l:Impl> "->" <r:Arrow> => Expr::Arrow(box l, box r),
     <l:ConstValue> "fby" <r:Arrow> => Expr::Fby(l, box r),
 }
 
@@ -217,7 +216,6 @@ Mul: Expr = {
 PreNot: Expr = {
     FunCall => <>,
     "not" <PreNot> => Expr::UnOp(UnOp::Not, box <>),
-    "pre" <PreNot> => Expr::Pre(box <>),
     "-" <PreNot> => Expr::UnOp(UnOp::UMinus, box <>),
 }
 

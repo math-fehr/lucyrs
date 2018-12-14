@@ -2,9 +2,9 @@ node check (x: bool) returns (OK: bool);
 var n1, n2: int;
     b1, b2: bool;
 let
-  n1 = 0 -> pre n1 + 1;
-  n2 = 0 -> pre (0 -> pre (n1 + 2));
-  b1 = false -> true;
-  b2 = false -> pre b1;
+  n1 = 0 fby n1 + 1;
+  n2 = 0 fby (0 fby (n1 + 2));
+  b1 = false fby true;
+  b2 = false fby b1;
   OK = if b1 and b2 then n1 = n2 else true;
 tel

@@ -82,8 +82,6 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         ast::Expr::BinOp(op, lhs, rhs) => type_binop(op, *lhs, *rhs, context),
         ast::Expr::When(box expr, ck, b) => type_when(expr, ck, b, context),
         ast::Expr::Merge(s, box e_true, box e_false) => type_merge(s, e_true, e_false, context),
-        ast::Expr::Pre(expr) => type_pre(*expr, context),
-        ast::Expr::Arrow(expr1, expr2) => type_arrow(*expr1, *expr2, context),
         ast::Expr::Fby(v, expr2) => type_fby(v, *expr2, context),
         ast::Expr::IfThenElse(e_cond, e_then, e_else) => {
             type_ifthenelse(*e_cond, *e_then, *e_else, context)
@@ -233,31 +231,6 @@ fn type_merge(
         expr: BaseExpr::Merge(ck, box typed_e_true, box typed_e_false),
         typ,
     })
-}
-
-fn type_pre(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
-    let typed_expr = type_expr(expr, context)?;
-    let typ = typed_expr.typ.clone();
-    Ok(Expr {
-        expr: BaseExpr::Pre(box typed_expr),
-        typ,
-    })
-}
-
-fn type_arrow(lhs: ast::Expr, rhs: ast::Expr, context: &Context) -> Result<Expr, String> {
-    let typed_lhs = type_expr(lhs, context)?;
-    let typed_rhs = type_expr(rhs, context)?;
-    if typed_lhs.typ != typed_rhs.typ {
-        Err(String::from(
-            "The type of the left hand side and the right hand side of an arrow or a fby should be equal",
-        ))
-    } else {
-        let typ = typed_lhs.typ.clone();
-        Ok(Expr {
-            expr: BaseExpr::Arrow(box typed_lhs, box typed_rhs),
-            typ,
-        })
-    }
 }
 
 fn type_fby(init: Value, rhs: ast::Expr, context: &Context) -> Result<Expr, String> {
