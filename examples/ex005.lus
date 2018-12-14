@@ -1,0 +1,9 @@
+node check (ck: bool) returns (v: int);
+var n1, n2, n3, n4: int;
+let
+  n4 = n3;
+  n2 = n1;
+  n1 = 1;
+  n3 = n2;
+  v = n4;
+tel

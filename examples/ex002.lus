@@ -1,9 +1,9 @@
-node check (x: bool) returns (OK: bool);
-var n1, n2: int;
+node check (ck: bool) returns (v: int);
+var n1, n2: int; notck: bool;
 let
-  n1 = 0 fby n1 + 1;
-  n2 = 0 -> (1 fby (n2 + 1));
-  OK = n1 = n2;
+  n1 = 0;
+  n2 = 1;
+  v = merge ck (n1 when ck) (n2 whenot ck);
 tel
 
 
