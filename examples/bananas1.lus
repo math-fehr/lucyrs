@@ -1,0 +1,17 @@
+node cumulative_sum(x : int) returns (y : int);
+let
+  y = (0 fby y) + x;
+tel;
+
+node count_bananas(banana : bool) returns (n : int);
+var bananas, no_bananas : int;
+let
+  bananas = cumulative_sum(1 when banana);
+  no_bananas = cumulative_sum(1 whenot banana);
+  n = merge banana bananas no_bananas;
+tel;
+
+node check(banana: bool) returns (n: int);
+let
+  n = count_bananas(banana);
+tel;

@@ -1,3 +1,4 @@
+use crate::ast::Clock;
 use crate::ident;
 use crate::ident::IdentGenerator;
 use crate::minils::ast as minils;
@@ -26,7 +27,7 @@ pub fn normalize(node: minils::Node) -> norm::Node {
 
 fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut norm::Node) {
     let typ_ = expr.typ.clone();
-    let clock = expr.clock.clone();
+    let clock = gen_clock_ident(expr.clock.clone());
     let mut defined_params;
     let expr_ = match expr.expr {
         minils::BaseExpr::FunCall(fun, params) => {
@@ -71,7 +72,7 @@ fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut nor
 fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node) -> norm::ExprCA {
     assert!(expr.typ.len() == 1);
     let typ_ = expr.typ[0].clone();
-    let clock = expr.clock.clone();
+    let clock = gen_clock_ident(expr.clock.clone());
     let expr_ = match expr.expr {
         minils::BaseExpr::FunCall(_, _) | minils::BaseExpr::Fby(_, _) => {
             let new_ident = ident.new_ident();
@@ -88,7 +89,7 @@ fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Nod
         minils::BaseExpr::Merge(ck, box e_t, box e_f) => {
             let e_t = normalize_ca(ident, e_t, node);
             let e_f = normalize_ca(ident, e_f, node);
-            norm::ExprCABase::Merge(ck, box e_t, box e_f)
+            norm::ExprCABase::Merge(ident::gen_ident(ck, 0), box e_t, box e_f)
         }
         _ => {
             let expr_a = normalize_a(ident, expr, node);
@@ -105,7 +106,7 @@ fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Nod
 fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node) -> norm::ExprA {
     assert!(expr.typ.len() == 1);
     let typ_ = expr.typ[0].clone();
-    let clock = expr.clock.clone();
+    let clock = gen_clock_ident(expr.clock.clone());
     let expr_ = match expr.expr {
         minils::BaseExpr::FunCall(_, _)
         | minils::BaseExpr::Fby(_, _)
@@ -135,5 +136,18 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
         typ: typ_,
         clock,
         expr: expr_,
+    }
+}
+
+fn gen_clock_ident(ck: Clock) -> Clock {
+    match ck {
+        Clock::Const => Clock::Const,
+        Clock::Ck(hm) => {
+            let mut hm_ = HashMap::new();
+            for (ident, b) in hm.into_iter() {
+                hm_.insert(ident::gen_ident(ident, 0), b);
+            }
+            Clock::Ck(hm_)
+        }
     }
 }

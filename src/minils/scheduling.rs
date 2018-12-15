@@ -55,7 +55,7 @@ fn schedule_node(node: &mut Node) {
 
 fn get_defined_vars(eq: &Eq) -> Vec<&str> {
     match &eq.eq {
-        ExprEqBase::Fby(s, _, _) => vec![&s],
+        ExprEqBase::Fby(_, _, _) => vec![],
         ExprEqBase::FunCall(v, _, _) => v.iter().map(|s| s.as_str()).collect(),
         ExprEqBase::ExprCA(s, _) => vec![&s],
     }
@@ -63,7 +63,7 @@ fn get_defined_vars(eq: &Eq) -> Vec<&str> {
 
 fn get_var_dependencies_eq(eq: &Eq) -> Vec<&str> {
     match &eq.eq {
-        ExprEqBase::Fby(_, _, _) => vec![],
+        ExprEqBase::Fby(_, _, box a) => get_var_dependencies_a(a),
         ExprEqBase::FunCall(_, _, params) => params
             .iter()
             .map(get_var_dependencies_a)

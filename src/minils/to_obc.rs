@@ -1,4 +1,4 @@
-use crate::ast::Value;
+use crate::ast::{Clock, Value};
 use crate::ident;
 use crate::minils::normalized_ast as norm;
 use crate::obc::ast as obc;
@@ -39,7 +39,7 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     }
 }
 
-pub fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
+fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
     let mut memory = HashMap::new();
     for eq in &node.eq_list {
         match &eq.eq {
@@ -52,16 +52,16 @@ pub fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
     memory
 }
 
-pub fn eq_to_obc(
+fn eq_to_obc(
     eq: norm::Eq,
     memory: &HashMap<String, Value>,
     instances: &mut HashMap<String, u32>,
     step_stmts: &mut Vec<obc::Stmt>,
 ) {
-    match eq.eq {
+    let mut stmt = match eq.eq {
         norm::ExprEqBase::Fby(s, _, box expr) => {
             let expr = a_to_obc(expr, memory, instances, step_stmts);
-            step_stmts.push(obc::Stmt::Assignment(s, expr));
+            obc::Stmt::Assignment(s, expr)
         }
         norm::ExprEqBase::FunCall(pat, fun, exprs) => {
             let n_fun = if let Some(n) = instances.get(&fun) {
@@ -75,16 +75,26 @@ pub fn eq_to_obc(
                 .into_iter()
                 .map(|e| a_to_obc(e, memory, instances, step_stmts))
                 .collect();
-            step_stmts.push(obc::Stmt::Step(pat, ident, exprs));
+            obc::Stmt::Step(pat, ident, exprs)
         }
-        norm::ExprEqBase::ExprCA(s, box expr) => {
-            let stmt = ca_to_obc(s, expr, memory, instances, step_stmts);
-            step_stmts.push(stmt);
+        norm::ExprEqBase::ExprCA(s, box expr) => ca_to_obc(s, expr, memory, instances, step_stmts),
+    };
+    match eq.clock {
+        Clock::Const => (),
+        Clock::Ck(hm) => {
+            for (ck, b) in hm {
+                if b {
+                    stmt = obc::Stmt::Control(ck, vec![stmt], vec![]);
+                } else {
+                    stmt = obc::Stmt::Control(ck, vec![], vec![stmt]);
+                }
+            }
         }
     }
+    step_stmts.push(stmt);
 }
 
-pub fn ca_to_obc(
+fn ca_to_obc(
     lhs: String,
     expr: norm::ExprCA,
     memory: &HashMap<String, Value>,
@@ -104,7 +114,7 @@ pub fn ca_to_obc(
     }
 }
 
-pub fn a_to_obc(
+fn a_to_obc(
     expr: norm::ExprA,
     memory: &HashMap<String, Value>,
     instances: &mut HashMap<String, u32>,

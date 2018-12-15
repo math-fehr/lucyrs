@@ -154,10 +154,7 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
                 .collect::<Vec<String>>()
                 .join(", ");
             let result = result.join(", ");
-            format!(
-                "{}let ({}) = self.{}.step({});\n",
-                indent, result, fun, params
-            )
+            format!("{}({}) = self.{}.step({});\n", indent, result, fun, params)
         }
         Stmt::Reset(s) => format!("{}self.{}.reset();\n", indent, s),
         Stmt::Control(x, stmts_true, stmts_false) => {
