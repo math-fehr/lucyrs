@@ -1,5 +1,5 @@
 use crate::minils_ast as minils;
-use crate::typer::typed_ast as typ;
+use crate::typer::clock_typed_ast as typ;
 
 pub fn to_minils(node: typ::Node) -> minils::Node {
     let name = node.name;
@@ -35,6 +35,15 @@ fn to_minils_expr(expr: typ::Expr) -> minils::Expr {
             let e2 = to_minils_expr(e2);
             minils::BaseExpr::Fby(e1, box e2)
         }
+        typ::BaseExpr::When(box e, ck, b) => {
+            let e = to_minils_expr(e);
+            minils::BaseExpr::When(box e, ck, b)
+        }
+        typ::BaseExpr::Merge(ck, box e_t, box e_f) => {
+            let e_t = to_minils_expr(e_t);
+            let e_f = to_minils_expr(e_f);
+            minils::BaseExpr::Merge(ck, box e_t, box e_f)
+        }
         typ::BaseExpr::IfThenElse(box e1, box e2, box e3) => {
             let e1 = to_minils_expr(e1);
             let e2 = to_minils_expr(e2);
@@ -46,10 +55,10 @@ fn to_minils_expr(expr: typ::Expr) -> minils::Expr {
             let exprs = exprs.into_iter().map(to_minils_expr).collect();
             minils::BaseExpr::FunCall(s, exprs)
         }
-        _ => unimplemented!(),
     };
     minils::Expr {
         typ: expr.typ,
         expr: expr_,
+        clock: expr.clock,
     }
 }

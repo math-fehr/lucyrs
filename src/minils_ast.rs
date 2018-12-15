@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Type, UnOp, Value};
+use crate::ast::{BinOp, Clock, Type, UnOp, Value};
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -13,6 +13,7 @@ pub struct Node {
 pub struct Expr {
     pub expr: BaseExpr,
     pub typ: Vec<Type>,
+    pub clock: Clock,
 }
 
 #[derive(Debug, Clone)]
@@ -21,6 +22,8 @@ pub enum BaseExpr {
     UnOp(UnOp, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     Fby(Value, Box<Expr>),
+    When(Box<Expr>, String, bool),
+    Merge(String, Box<Expr>, Box<Expr>),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>),

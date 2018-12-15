@@ -14,12 +14,7 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     let mut temp_instances = HashMap::new();
     let mut step_stmts = vec![];
     for eq in node.eq_list {
-        eq_to_obc(
-            eq,
-            &memory,
-            &mut temp_instances,
-            &mut step_stmts,
-        );
+        eq_to_obc(eq, &memory, &mut temp_instances, &mut step_stmts);
     }
     let mut instances = HashMap::new();
     for (s, i) in temp_instances {
@@ -28,7 +23,10 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
         }
     }
     for (s, _) in &memory {
-        step_stmts.push(obc::Stmt::StateAssignment(s.clone(), obc::Expr::Var(s.clone())));
+        step_stmts.push(obc::Stmt::StateAssignment(
+            s.clone(),
+            obc::Expr::Var(s.clone()),
+        ));
     }
     obc::Machine {
         name,
@@ -47,8 +45,8 @@ pub fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
         match &eq.eq {
             norm::ExprEqBase::Fby(s, v, _) => {
                 memory.insert(s.clone(), v.clone());
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
     memory
@@ -95,20 +93,8 @@ pub fn ca_to_obc(
 ) -> obc::Stmt {
     match expr.expr {
         norm::ExprCABase::Merge(x, box expr_true, box expr_false) => {
-            let expr_true = ca_to_obc(
-                lhs.clone(),
-                expr_true,
-                memory,
-                instances,
-                step_stmts,
-            );
-            let expr_false = ca_to_obc(
-                lhs,
-                expr_false,
-                memory,
-                instances,
-                step_stmts,
-            );
+            let expr_true = ca_to_obc(lhs.clone(), expr_true, memory, instances, step_stmts);
+            let expr_false = ca_to_obc(lhs, expr_false, memory, instances, step_stmts);
             obc::Stmt::Control(x, vec![expr_true], vec![expr_false])
         }
         norm::ExprCABase::ExprA(box expr) => {
@@ -142,5 +128,6 @@ pub fn a_to_obc(
             let rhs = a_to_obc(rhs, memory, instances, step_stmts);
             obc::Expr::BinOp(op, box lhs, box rhs)
         }
+        norm::ExprABase::When(box e, _, _) => a_to_obc(e, memory, instances, step_stmts),
     }
 }

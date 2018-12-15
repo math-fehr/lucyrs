@@ -31,13 +31,14 @@ fn schedule_node(node: &mut Node) {
         causality_graph.add_node(i);
     }
     let defined_vars: Vec<Vec<&str>> = node.eq_list.iter().map(get_defined_vars).collect();
-    let var_dependencies: Vec<Vec<&str>> = node.eq_list.iter().map(get_var_dependencies_eq).collect();
+    let var_dependencies: Vec<Vec<&str>> =
+        node.eq_list.iter().map(get_var_dependencies_eq).collect();
     for i in 0..node.eq_list.len() {
         for j in 0..node.eq_list.len() {
             for defined_var in &defined_vars[i] {
                 for var in &var_dependencies[j] {
                     if var == defined_var {
-                        causality_graph.add_edge(i,j,());
+                        causality_graph.add_edge(i, j, ());
                     }
                 }
             }
@@ -46,7 +47,10 @@ fn schedule_node(node: &mut Node) {
     let topo_sort = petgraph::algo::toposort(&causality_graph, None);
     assert!(topo_sort.is_ok());
     let topo_sort = topo_sort.unwrap();
-    node.eq_list = topo_sort.into_iter().map(|i| node.eq_list[i].clone()).collect();
+    node.eq_list = topo_sort
+        .into_iter()
+        .map(|i| node.eq_list[i].clone())
+        .collect();
 }
 
 fn get_defined_vars(eq: &Eq) -> Vec<&str> {
@@ -92,6 +96,11 @@ fn get_var_dependencies_a(a: &ExprA) -> Vec<&str> {
             let mut vars_2 = get_var_dependencies_a(&a_2);
             vars_1.append(&mut vars_2);
             vars_1
+        }
+        ExprABase::When(box a, s, _) => {
+            let mut vars = get_var_dependencies_a(&a);
+            vars.push(s);
+            vars
         }
     }
 }

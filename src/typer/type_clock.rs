@@ -23,8 +23,13 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
     for (vars, expr) in node.eq_list {
         let expr = annotate_expr(expr, &variables)?;
         for var in &vars {
-            let typ = defined_params.iter().find(|(s,_)| s == var).unwrap().1.clone();
-            variables.insert(var.clone(), (typ,expr.clock.clone()));
+            let typ = defined_params
+                .iter()
+                .find(|(s, _)| s == var)
+                .unwrap()
+                .1
+                .clone();
+            variables.insert(var.clone(), (typ, expr.clock.clone()));
         }
         eq_list.push((vars, expr));
     }
@@ -33,7 +38,7 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
         in_params: node.in_params,
         out_params: node.out_params,
         local_params: node.local_params,
-        eq_list
+        eq_list,
     })
 }
 
@@ -56,15 +61,12 @@ fn annotate_expr(
             let e = annotate_expr(e, vars)?;
             let clock = e.clock.clone();
             (ck::BaseExpr::Fby(v, box e), clock)
-        },
-        typ::BaseExpr::IfThenElse(box cond, box e_t, box e_f) =>
+        }
+        typ::BaseExpr::IfThenElse(box cond, box e_t, box e_f) => {
             annotate_ifthenelse(cond, e_t, e_f, vars)?
-        ,
-        typ::BaseExpr::Var(s) =>
-            annotate_var(s, vars)
-        ,
-        typ::BaseExpr::FunCall(s, exprs) =>
-            annotate_funcall(s, exprs, vars)?
+        }
+        typ::BaseExpr::Var(s) => annotate_var(s, vars),
+        typ::BaseExpr::FunCall(s, exprs) => annotate_funcall(s, exprs, vars)?,
     };
     Ok(ck::Expr { expr, typ, clock })
 }
@@ -73,7 +75,7 @@ fn annotate_binop(
     op: BinOp,
     e1: typ::Expr,
     e2: typ::Expr,
-    vars: &HashMap<String, (Type,Clock)>,
+    vars: &HashMap<String, (Type, Clock)>,
 ) -> Result<(ck::BaseExpr, Clock), String> {
     let mut e1 = annotate_expr(e1, vars)?;
     let mut e2 = annotate_expr(e2, vars)?;
@@ -94,46 +96,59 @@ fn annotate_when(
     e: typ::Expr,
     s: String,
     b: bool,
-    vars: &HashMap<String, (Type,Clock)>,
+    vars: &HashMap<String, (Type, Clock)>,
 ) -> Result<(ck::BaseExpr, Clock), String> {
     let mut e = annotate_expr(e, vars)?;
     if e.clock == Clock::Const {
         lower_clock(&mut e, &Clock::Ck(HashMap::new()));
     }
-    let clock = match e.clock {
-        Clock::Const => unimplemented!(),
+    let clock = match e.clock.clone() {
+        Clock::Const => unreachable!(),
         Clock::Ck(mut hm) => {
-            hm.insert(s, b);
+            hm.insert(s.clone(), b);
             Clock::Ck(hm)
         }
     };
-    Ok((e.expr, clock))
+    Ok((ck::BaseExpr::When(box e, s, b), clock))
 }
 
-fn annotate_merge(ck: String, e_t: typ::Expr, e_f: typ::Expr, vars: &HashMap<String, (Type, Clock)>) -> Result<(ck::BaseExpr, Clock), String> {
+fn annotate_merge(
+    ck: String,
+    e_t: typ::Expr,
+    e_f: typ::Expr,
+    vars: &HashMap<String, (Type, Clock)>,
+) -> Result<(ck::BaseExpr, Clock), String> {
     let e_t = annotate_expr(e_t, vars)?;
     let e_f = annotate_expr(e_f, vars)?;
     let mut hm_t = match &e_t.clock {
         Clock::Const => {
-            return Err(String::from("Left expression in a merge should have a clock on true(merge clock)"));
-        },
+            return Err(String::from(
+                "Left expression in a merge should have a clock on true(merge clock)",
+            ));
+        }
         Clock::Ck(hm) => {
             if let Some(true) = hm.get(&ck) {
                 hm.clone()
             } else {
-                return Err(String::from("Left expression in a merge should have a clock on true(merge clock)"));
+                return Err(String::from(
+                    "Left expression in a merge should have a clock on true(merge clock)",
+                ));
             }
         }
     };
     let mut hm_f = match &e_f.clock {
         Clock::Const => {
-            return Err(String::from("Right expression in a merge should have a clock on false(merge clock)"));
-        },
+            return Err(String::from(
+                "Right expression in a merge should have a clock on false(merge clock)",
+            ));
+        }
         Clock::Ck(hm) => {
             if let Some(false) = hm.get(&ck) {
                 hm.clone()
             } else {
-                return Err(String::from("Right expression in a merge should have a clock on false(merge clock)"));
+                return Err(String::from(
+                    "Right expression in a merge should have a clock on false(merge clock)",
+                ));
             }
         }
     };
@@ -144,17 +159,28 @@ fn annotate_merge(ck: String, e_t: typ::Expr, e_f: typ::Expr, vars: &HashMap<Str
     }
     let ck_clock = &vars.get(&ck).unwrap().1;
     if !Clock::is_compatible(ck_clock, &Clock::Ck(hm_f)) {
-        return Err(String::from("Expressions in merge construct should have clock compatible with the merge clock."));
+        return Err(String::from(
+            "Expressions in merge construct should have clock compatible with the merge clock.",
+        ));
     }
     Ok((ck::BaseExpr::Merge(ck, box e_t, box e_f), Clock::Ck(hm_t)))
 }
 
-fn annotate_ifthenelse(cond: typ::Expr, e_t: typ::Expr, e_f: typ::Expr, vars: &HashMap<String, (Type,Clock)>) -> Result<(ck::BaseExpr, Clock), String> {
+fn annotate_ifthenelse(
+    cond: typ::Expr,
+    e_t: typ::Expr,
+    e_f: typ::Expr,
+    vars: &HashMap<String, (Type, Clock)>,
+) -> Result<(ck::BaseExpr, Clock), String> {
     let mut cond = annotate_expr(cond, vars)?;
     let mut e_t = annotate_expr(e_t, vars)?;
     let mut e_f = annotate_expr(e_f, vars)?;
-    if !Clock::is_compatible(&e_t.clock, &cond.clock) || !Clock::is_compatible(&e_f.clock, &cond.clock) {
-        return Err(String::from("Expressions in a if construct should have compatible clocks"));
+    if !Clock::is_compatible(&e_t.clock, &cond.clock)
+        || !Clock::is_compatible(&e_f.clock, &cond.clock)
+    {
+        return Err(String::from(
+            "Expressions in a if construct should have compatible clocks",
+        ));
     }
     lower_clock(&mut cond, &e_t.clock);
     lower_clock(&mut cond, &e_f.clock);
@@ -166,14 +192,18 @@ fn annotate_ifthenelse(cond: typ::Expr, e_t: typ::Expr, e_f: typ::Expr, vars: &H
     Ok((ck::BaseExpr::IfThenElse(box cond, box e_t, box e_f), clock))
 }
 
-fn annotate_var(var: String, vars: &HashMap<String, (Type,Clock)>) -> (ck::BaseExpr, Clock) {
+fn annotate_var(var: String, vars: &HashMap<String, (Type, Clock)>) -> (ck::BaseExpr, Clock) {
     match vars.get(&var) {
         None => (ck::BaseExpr::Var(var), Clock::Const),
-        Some(ck) => (ck::BaseExpr::Var(var), ck.1.clone())
+        Some(ck) => (ck::BaseExpr::Var(var), ck.1.clone()),
     }
 }
 
-fn annotate_funcall(fun: String, exprs: Vec<typ::Expr>, vars: &HashMap<String, (Type,Clock)>) -> Result<(ck::BaseExpr, Clock), String> {
+fn annotate_funcall(
+    fun: String,
+    exprs: Vec<typ::Expr>,
+    vars: &HashMap<String, (Type, Clock)>,
+) -> Result<(ck::BaseExpr, Clock), String> {
     let mut exprs_ = vec![];
     for expr in exprs {
         exprs_.push(annotate_expr(expr, vars)?);
@@ -181,7 +211,9 @@ fn annotate_funcall(fun: String, exprs: Vec<typ::Expr>, vars: &HashMap<String, (
     for i in 0..exprs_.len() {
         for j in 0..exprs_.len() {
             if !Clock::is_compatible(&exprs_[i].clock, &exprs_[j].clock) {
-                return Err(String::from("Parameters of node call should have the same clock"));
+                return Err(String::from(
+                    "Parameters of node call should have the same clock",
+                ));
             }
             let clock_j = exprs_[j].clock.clone();
             let clock_i = exprs_[i].clock.clone();
