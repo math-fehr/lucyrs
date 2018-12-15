@@ -1,7 +1,7 @@
 use crate::ident;
 use crate::ident::IdentGenerator;
-use crate::minils_ast as minils;
-use crate::normalized_ast as norm;
+use crate::minils::ast as minils;
+use crate::minils::normalized_ast as norm;
 
 use std::collections::HashMap;
 

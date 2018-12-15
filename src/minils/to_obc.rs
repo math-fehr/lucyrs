@@ -1,7 +1,7 @@
 use crate::ast::Value;
 use crate::ident;
-use crate::normalized_ast as norm;
-use crate::obc_ast as obc;
+use crate::minils::normalized_ast as norm;
+use crate::obc::ast as obc;
 
 use std::collections::HashMap;
 

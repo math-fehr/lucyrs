@@ -1,5 +1,5 @@
-use crate::minils_ast as minils;
-use crate::typer::clock_typed_ast as typ;
+use crate::minils::ast as minils;
+use crate::lucy::clock_typed_ast as typ;
 
 pub fn to_minils(node: typ::Node) -> minils::Node {
     let name = node.name;

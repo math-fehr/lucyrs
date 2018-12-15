@@ -1,9 +1,12 @@
 use crate::ast::{BinOp, Type, UnOp, Value};
-use crate::obc_ast::{Expr, Machine, Stmt};
 use crate::ident;
+use crate::obc::ast::{Expr, Machine, Stmt};
 
 pub fn obc_to_rust(machines: &Vec<Machine>, entry_machine: &str) -> String {
-    let entry_machine = machines.iter().find(|m| m.name == ident::gen_ident(entry_machine.to_string(),0)).unwrap();
+    let entry_machine = machines
+        .iter()
+        .find(|m| m.name == ident::gen_ident(entry_machine.to_string(), 0))
+        .unwrap();
     let prog = get_rust_main(entry_machine) + "\n\n";
     prog + &machines.into_iter().fold(String::new(), |s, machine| {
         s + &machine_to_rust(machine) + "\n\n"
@@ -13,19 +16,44 @@ pub fn obc_to_rust(machines: &Vec<Machine>, entry_machine: &str) -> String {
 fn get_rust_main(machine: &Machine) -> String {
     let mut main = String::from("use std::io::{self, Read};\n");
     main += "fn main() {\n";
-    main += &format!("    let mut entry_machine: {} = Default::default();\n", machine.name);
+    main += &format!(
+        "    let mut entry_machine: {} = Default::default();\n",
+        machine.name
+    );
     main += "    entry_machine.reset();\n";
     main += "    let mut buffer =  String::new();\n";
     main += "    loop {\n";
-    for (input,typ) in &machine.step_inputs {
+    for (input, typ) in &machine.step_inputs {
         main += &format!("        buffer = String::new();\n");
-        main += &format!("        println!(\"Value of {} ({}): \");\n", input, type_to_rust(typ));
+        main += &format!(
+            "        println!(\"Value of {} ({}): \");\n",
+            input,
+            type_to_rust(typ)
+        );
         main += "        io::stdin().read_line(&mut buffer).unwrap();\n";
-        main += &format!("        let {}: {} = buffer.trim().parse().unwrap();\n", input, type_to_rust(typ));
+        main += &format!(
+            "        let {}: {} = buffer.trim().parse().unwrap();\n",
+            input,
+            type_to_rust(typ)
+        );
     }
-    let inputs = machine.step_inputs.iter().map(|(s,_)| s.to_string()).collect::<Vec<String>>().join(", ");
-    let outputs = machine.step_returns.iter().map(|(s,_)| s.to_string()).collect::<Vec<String>>().join(", ");
-    main += &format!("        let {} = entry_machine.step({});\n", outputs.clone(), inputs);
+    let inputs = machine
+        .step_inputs
+        .iter()
+        .map(|(s, _)| s.to_string())
+        .collect::<Vec<String>>()
+        .join(", ");
+    let outputs = machine
+        .step_returns
+        .iter()
+        .map(|(s, _)| s.to_string())
+        .collect::<Vec<String>>()
+        .join(", ");
+    main += &format!(
+        "        let {} = entry_machine.step({});\n",
+        outputs.clone(),
+        inputs
+    );
     main += &format!("        println!(\"Results: {{}}\", {});\n", outputs);
     main += "        println!(\"{:#?}\", entry_machine);\n";
     main += "    }\n";
@@ -126,7 +154,10 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
                 .collect::<Vec<String>>()
                 .join(", ");
             let result = result.join(", ");
-            format!("{}let ({}) = self.{}.step({});\n", indent, result, fun, params)
+            format!(
+                "{}let ({}) = self.{}.step({});\n",
+                indent, result, fun, params
+            )
         }
         Stmt::Reset(s) => format!("{}self.{}.reset();\n", indent, s),
         Stmt::Control(x, stmts_true, stmts_false) => {

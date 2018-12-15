@@ -1,4 +1,4 @@
-use crate::normalized_ast::*;
+use crate::minils::normalized_ast::*;
 
 use petgraph::graphmap::GraphMap;
 use std::collections::HashSet;

@@ -59,12 +59,10 @@ impl Clock {
     pub fn is_compatible(clock1: &Clock, clock2: &Clock) -> bool {
         match clock1 {
             Clock::Const => true,
-            Clock::Ck(hm1) => {
-                match clock2 {
-                    Clock::Const => true,
-                    Clock::Ck(hm2) => hm1 == hm2
-                }
-            }
+            Clock::Ck(hm1) => match clock2 {
+                Clock::Const => true,
+                Clock::Ck(hm2) => hm1 == hm2,
+            },
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::ast::{BinOp, Clock, Type};
-use crate::typer::clock_typed_ast as ck;
-use crate::typer::typed_ast as typ;
+use crate::lucy::clock_typed_ast as ck;
+use crate::lucy::typed_ast as typ;
 
 use std::collections::HashMap;
 

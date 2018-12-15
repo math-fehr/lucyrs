@@ -1,5 +1,11 @@
+pub mod scheduling;
+pub mod to_minils;
 pub mod grammar;
 pub mod ast;
+pub mod typed_ast;
+pub mod clock_typed_ast;
+pub mod type_clock;
+pub mod typing;
 
 use std::fs::File;
 use std::io::Read;

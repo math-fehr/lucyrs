@@ -1,5 +1,5 @@
-use crate::parser::ast::Expr::*;
-use crate::parser::ast::{Expr, Node};
+use crate::lucy::ast::Expr::*;
+use crate::lucy::ast::{Expr, Node};
 
 use petgraph::graphmap::GraphMap;
 use std::collections::HashSet;
