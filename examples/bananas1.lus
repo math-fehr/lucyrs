@@ -4,11 +4,10 @@ let
 tel;
 
 node count_bananas(banana : bool) returns (n : int);
-var bananas, no_bananas : int;
+var bananas: int;
 let
   bananas = cumulative_sum(1 when banana);
-  no_bananas = cumulative_sum(1 whenot banana);
-  n = merge banana bananas no_bananas;
+  n = current bananas 0;
 tel;
 
 node check(banana: bool) returns (n: int);

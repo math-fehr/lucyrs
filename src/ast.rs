@@ -52,7 +52,7 @@ impl Value {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Clock {
     Const,
-    Ck(HashMap<String, bool>),
+    Ck(Vec<(String, bool)>),
 }
 
 impl Clock {

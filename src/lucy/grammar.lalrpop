@@ -217,6 +217,7 @@ PreNot: Expr = {
     FunCall => <>,
     "not" <PreNot> => Expr::UnOp(UnOp::Not, box <>),
     "-" <PreNot> => Expr::UnOp(UnOp::UMinus, box <>),
+    "current" <i:Ident> <c:ConstValue> => Expr::Current(i,c),
 }
 
 FunCall: Expr = {

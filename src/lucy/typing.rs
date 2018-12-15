@@ -86,6 +86,7 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         }
         ast::Expr::Var(ident) => type_var(ident, context),
         ast::Expr::FunCall(ident, params) => type_funcall(ident, params, context),
+        ast::Expr::Current(ident, v) => type_current(ident, v, context),
     }
 }
 
@@ -313,5 +314,20 @@ fn type_funcall(ident: String, inputs: Vec<ast::Expr>, context: &Context) -> Res
         }
     } else {
         Err(format!("Node {} used but not declared", &ident))
+    }
+}
+
+fn type_current(ident: String, value: Value, context: &Context) -> Result<Expr, String> {
+    if let Some(t) = context.variables.get(&ident) {
+        if t != &value.get_type() {
+            Err(String::from("In a current construct, the initial value and the variable should have the same type."))
+        } else {
+            Ok(Expr {
+                expr: BaseExpr::Current(ident, value),
+                typ: vec![t.clone()],
+            })
+        }
+    } else {
+        Err(format!("Variable {} used but not declared", &ident))
     }
 }

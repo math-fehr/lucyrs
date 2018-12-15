@@ -5,7 +5,7 @@ pub struct Node {
     pub name: String,
     pub in_params: Vec<(String, Type)>,
     pub out_params: Vec<(String, Type)>,
-    pub local_params: Vec<(String, Type)>,
+    pub local_params: Vec<(String, Type, Clock)>,
     pub eq_list: Vec<(Vec<String>, Expr)>,
 }
 
@@ -27,4 +27,5 @@ pub enum BaseExpr {
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>),
+    Current(String, Value),
 }

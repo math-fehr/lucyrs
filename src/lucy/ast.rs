@@ -20,4 +20,5 @@ pub enum Expr {
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>),
+    Current(String, Value),
 }

@@ -142,12 +142,12 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
 fn gen_clock_ident(ck: Clock) -> Clock {
     match ck {
         Clock::Const => Clock::Const,
-        Clock::Ck(hm) => {
-            let mut hm_ = HashMap::new();
-            for (ident, b) in hm.into_iter() {
-                hm_.insert(ident::gen_ident(ident, 0), b);
-            }
-            Clock::Ck(hm_)
+        Clock::Ck(v) => {
+            let v = v
+                .into_iter()
+                .map(|(ident, b)| (ident::gen_ident(ident, 0), b))
+                .collect();
+            Clock::Ck(v)
         }
     }
 }

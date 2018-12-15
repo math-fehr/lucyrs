@@ -103,6 +103,10 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
                 v.append(&mut get_var_deps(&expr, node));
             }
             v
-        }
+        },
+        Current(s,_) => {
+            vec![s]
+        },
     }
 }
+
