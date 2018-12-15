@@ -50,11 +50,11 @@ fn get_rust_main(machine: &Machine) -> String {
         .collect::<Vec<String>>()
         .join(", ");
     main += &format!(
-        "        let {} = entry_machine.step({});\n",
+        "        let ({}) = entry_machine.step({});\n",
         outputs.clone(),
         inputs
     );
-    main += &format!("        println!(\"Results: {{}}\", {});\n", outputs);
+    main += &format!("        println!(\"Results: {{:?}}\", ({}));\n", outputs);
     main += "        println!(\"{:#?}\", entry_machine);\n";
     main += "    }\n";
     main + "}\n"
@@ -146,15 +146,26 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
         Stmt::Assignment(s, expr) => format!("{}{} = {};\n", indent, s, expr_to_rust(expr)),
         Stmt::StateAssignment(s, expr) => {
             format!("{}self.{} = {};\n", indent, s, expr_to_rust(expr))
-        }
-        Stmt::Step(result, fun, params) => {
+        },
+        Stmt::Step(results, fun, params) => {
             let params = params
                 .iter()
                 .map(expr_to_rust)
                 .collect::<Vec<String>>()
                 .join(", ");
-            let result = result.join(", ");
-            format!("{}({}) = self.{}.step({});\n", indent, result, fun, params)
+            let results_temp = results
+                .iter()
+                .map(|s| s.clone() + "_result")
+                .collect::<Vec<String>>();
+            let results_str = results_temp.clone().join(", ");
+            let mut step = format!(
+                "{}let ({}) = self.{}.step({});\n",
+                indent, results_str, fun, params
+            );
+            for (l,r) in results.iter().zip(results_temp) {
+                step += &format!("{}{} = {};\n", indent, l, r);
+            }
+            step
         }
         Stmt::Reset(s) => format!("{}self.{}.reset();\n", indent, s),
         Stmt::Control(x, stmts_true, stmts_false) => {
@@ -236,7 +247,7 @@ fn type_to_rust(typ: &Type) -> String {
 fn value_to_rust(val: &Value) -> String {
     match val {
         Value::Int(i) => i.to_string(),
-        Value::Real(r) => r.to_string(),
+        Value::Real(r) => r.to_string() + "f32",
         Value::Bool(b) => b.to_string(),
     }
 }

@@ -1,0 +1,4 @@
+node double_delay(i: int) returns (n: int);
+let
+  n = 0 fby (1 fby i);
+tel

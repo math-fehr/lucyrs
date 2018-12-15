@@ -125,8 +125,8 @@ fn type_unop(op: UnOp, expr: ast::Expr, context: &Context) -> Result<Expr, Strin
                     ))
                 } else {
                     Ok(Expr {
-                        expr: BaseExpr::UnOp(UnOp::UMinus, box typed_expr),
-                        typ: vec![Type::Int],
+                        expr: BaseExpr::UnOp(UnOp::UMinus, box typed_expr.clone()),
+                        typ: typed_expr.typ.clone(),
                     })
                 }
             }

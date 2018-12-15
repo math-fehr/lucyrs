@@ -1,0 +1,4 @@
+node f(a,b: real) returns (c: real);
+let
+  c = a * b;
+tel;

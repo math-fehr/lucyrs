@@ -5,5 +5,3 @@ let
   n2 = 1;
   v = merge ck (n1 when ck) (n2 whenot ck);
 tel
-
-

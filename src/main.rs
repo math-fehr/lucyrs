@@ -15,7 +15,7 @@ fn main() {
     let node_name = &args[2];
     let mut nodes = lucy::parse_file(filename);
 
-    // Causality checking
+    // Causality checking 
     // TODO improve message
     if !lucy::scheduling::schedule(&mut nodes) {
         panic!("Causality not okay!");

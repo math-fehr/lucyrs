@@ -9,8 +9,8 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     let memory = get_memories(&node);
     let name = node.name;
     let step_inputs = node.in_params;
-    let step_returns = node.out_params;
-    let step_vars = node.defined_params;
+    let mut step_returns = node.out_params;
+    let mut step_vars = node.defined_params;
     let mut temp_instances = HashMap::new();
     let mut step_stmts = vec![];
     for eq in node.eq_list {
@@ -20,6 +20,14 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     for (s, i) in temp_instances {
         for j in 0..i {
             instances.insert(ident::gen_ident(s.clone(), j), s.clone());
+        }
+    }
+    for (s, t) in &mut step_returns {
+        if memory.get(s).is_some() {
+            let s_result = s.clone() + "_result";
+            step_vars.insert(s_result.clone(), t.clone());
+            step_stmts.push(obc::Stmt::Assignment(s_result.clone(), obc::Expr::State(s.clone())));
+            *s = s_result;
         }
     }
     for (s, _) in &memory {
