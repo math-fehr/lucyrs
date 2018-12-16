@@ -1,6 +1,6 @@
-use crate::lucy::typed_ast::{BaseExpr, Expr, Node};
 use crate::ast::{BinOp, Type, UnOp, Value};
 use crate::lucy::ast;
+use crate::lucy::typed_ast::{BaseExpr, Expr, Node};
 use std::collections::HashMap;
 
 struct Context<'a> {
@@ -85,7 +85,7 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
             type_ifthenelse(*e_cond, *e_then, *e_else, context)
         }
         ast::Expr::Var(ident) => type_var(ident, context),
-        ast::Expr::FunCall(ident, params) => type_funcall(ident, params, context),
+        ast::Expr::FunCall(ident, params, ck) => type_funcall(ident, params, ck, context),
         ast::Expr::Current(ident, v) => type_current(ident, v, context),
         ast::Expr::Pre(box e) => type_pre(e, context),
         ast::Expr::Arrow(box e1, box e2) => type_arrow(e1, e2, context),
@@ -287,33 +287,49 @@ fn type_var(ident: String, context: &Context) -> Result<Expr, String> {
     }
 }
 
-fn type_funcall(ident: String, inputs: Vec<ast::Expr>, context: &Context) -> Result<Expr, String> {
+fn type_funcall(
+    ident: String,
+    inputs: Vec<ast::Expr>,
+    ck: Option<String>,
+    context: &Context,
+) -> Result<Expr, String> {
     if let Some((in_type, out_type)) = context.functions.get(&ident) {
         if inputs.len() != in_type.len() {
-            Err(format!(
+            return Err(format!(
                 "Node {} expect {} inputs, but only {} were given",
                 &ident,
                 inputs.len(),
                 in_type.len()
-            ))
-        } else {
-            let mut typed_inputs = vec![];
-            for input in inputs {
-                typed_inputs.push(type_expr(input, context)?);
+            ));
+        }
+        let mut typed_inputs = vec![];
+        for input in inputs {
+            typed_inputs.push(type_expr(input, context)?);
+        }
+        for i in 0..typed_inputs.len() {
+            if typed_inputs[i].typ.len() != 1 || typed_inputs[i].typ[0] != in_type[i] {
+                return Err(format!(
+                    "Input {} has not the expected type in node call.",
+                    i
+                ));
             }
-            for i in 0..typed_inputs.len() {
-                if typed_inputs[i].typ.len() != 1 || typed_inputs[i].typ[0] != in_type[i] {
+        }
+        if let Some(ck) = ck.clone() {
+            if let Some(t) = context.variables.get(&ck) {
+                if t != &Type::Bool {
                     return Err(format!(
-                        "Input {} has not the expected type in node call.",
-                        i
+                        "The variable {} was used as reset but is of type {:?}",
+                        ck, t
                     ));
                 }
+            } else {
+                return Err(format!("Variable {} used but not declared", &ident));
             }
-            Ok(Expr {
-                expr: BaseExpr::FunCall(ident, typed_inputs),
-                typ: out_type.clone(),
-            })
         }
+        Ok(Expr {
+            expr: BaseExpr::FunCall(ident, typed_inputs, ck),
+            typ: out_type.clone(),
+        })
     } else {
         Err(format!("Node {} used but not declared", &ident))
     }
@@ -350,10 +366,14 @@ fn type_arrow(expr_1: ast::Expr, expr_2: ast::Expr, context: &Context) -> Result
     let expr_1 = type_expr(expr_1, context)?;
     let expr_2 = type_expr(expr_2, context)?;
     if expr_1.typ.len() != 1 || expr_2.typ.len() != 1 {
-        return Err(String::from("In an arrow construct, the two expressions hsould not be tuples"));
+        return Err(String::from(
+            "In an arrow construct, the two expressions hsould not be tuples",
+        ));
     }
     if expr_1.typ[0] != expr_2.typ[0] {
-        return Err(String::from("In an arrow construct, both expressions should have same size"));
+        return Err(String::from(
+            "In an arrow construct, both expressions should have same size",
+        ));
     }
     let typ = expr_1.typ.clone();
     Ok(Expr {

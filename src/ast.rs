@@ -65,4 +65,23 @@ impl Clock {
             },
         }
     }
+
+    pub fn is_faster_or_equal_than(&self, clock: &Clock) -> bool {
+        match &self {
+            Clock::Const => true,
+            Clock::Ck(v_1) => match clock {
+                Clock::Const => v_1.len() == 0,
+                Clock::Ck(v_2) => {
+                    if v_1.len() > v_2.len() {
+                        false
+                    } else {
+                        v_1.iter()
+                            .zip(v_2)
+                            .map(|((c_1, _), (c_2, _))| c_1 == c_2)
+                            .fold(true, |acc, b| b && acc)
+                    }
+                }
+            },
+        }
+    }
 }

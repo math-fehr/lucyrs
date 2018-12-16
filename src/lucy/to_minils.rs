@@ -1,6 +1,6 @@
-use crate::ast::{Value, Clock, Type};
-use crate::minils::ast as minils;
+use crate::ast::{Clock, Type, Value};
 use crate::lucy::clock_typed_ast as typ;
+use crate::minils::ast as minils;
 
 pub fn to_minils(node: typ::Node) -> minils::Node {
     let name = node.name;
@@ -53,14 +53,18 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
             minils::BaseExpr::IfThenElse(box e1, box e2, box e3)
         }
         typ::BaseExpr::Var(s) => minils::BaseExpr::Var(s),
-        typ::BaseExpr::FunCall(s, exprs) => {
-            let exprs = exprs.into_iter().map(|e| to_minils_expr(e,node)).collect();
-            minils::BaseExpr::FunCall(s, exprs)
-        },
+        typ::BaseExpr::FunCall(s, exprs, r) => {
+            let exprs = exprs.into_iter().map(|e| to_minils_expr(e, node)).collect();
+            minils::BaseExpr::FunCall(s, exprs, r)
+        }
         typ::BaseExpr::Current(s, v) => {
-            let clock = node.local_params.iter().find(|(s_,_,_)| s_ == &s).unwrap();
+            let clock = node
+                .local_params
+                .iter()
+                .find(|(s_, _, _)| s_ == &s)
+                .unwrap();
             to_minils_current(s, v, clock.2.clone(), expr.typ[0].clone(), node)
-        },
+        }
         typ::BaseExpr::Pre(box e) => {
             let e = to_minils_expr(e, node);
             let value = match &e.typ[0] {
@@ -69,7 +73,7 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
                 Type::Bool => Value::Bool(false),
             };
             minils::BaseExpr::Fby(value, box e)
-        },
+        }
         typ::BaseExpr::Arrow(box e_1, box e_2) => {
             let clock = e_1.clock.clone();
             let typ = e_1.typ.clone();
@@ -98,8 +102,13 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
     }
 }
 
-
-fn to_minils_current(ident: String, value: Value, clock: Clock, typ: Type, node: &mut minils::Node) -> minils::BaseExpr {
+fn to_minils_current(
+    ident: String,
+    value: Value,
+    clock: Clock,
+    typ: Type,
+    node: &mut minils::Node,
+) -> minils::BaseExpr {
     let ident_current = ident.clone() + "_current";
     let ident_pre = ident.clone() + "_pre";
     let pre_var_expr = minils::Expr {
@@ -108,9 +117,7 @@ fn to_minils_current(ident: String, value: Value, clock: Clock, typ: Type, node:
         clock: Clock::Ck(vec![]),
     };
     match clock.clone() {
-        Clock::Const =>
-            minils::BaseExpr::Var(ident)
-            ,
+        Clock::Const => minils::BaseExpr::Var(ident),
         Clock::Ck(mut v) => {
             let mut expr = minils::Expr {
                 typ: vec![typ.clone()],
@@ -118,17 +125,25 @@ fn to_minils_current(ident: String, value: Value, clock: Clock, typ: Type, node:
                 clock,
             };
             while v.len() > 0 {
-                let (ck,b) = v.pop().unwrap();
+                let (ck, b) = v.pop().unwrap();
                 let mut clock_true = v.clone();
-                clock_true.push((ck.clone(),true));
+                clock_true.push((ck.clone(), true));
                 let clock_true = Clock::Ck(clock_true);
                 let mut clock_false = v.clone();
-                clock_false.push((ck.clone(),false));
+                clock_false.push((ck.clone(), false));
                 let clock_false = Clock::Ck(clock_false);
                 let clock = Clock::Ck(v.clone());
                 let base_expr = match b {
-                    true => minils::BaseExpr::Merge(ck.clone(), box expr, box nested_when(pre_var_expr.clone(), clock_false)),
-                    false => minils::BaseExpr::Merge(ck.clone(), box nested_when(pre_var_expr.clone(), clock_true), box expr),
+                    true => minils::BaseExpr::Merge(
+                        ck.clone(),
+                        box expr,
+                        box nested_when(pre_var_expr.clone(), clock_false),
+                    ),
+                    false => minils::BaseExpr::Merge(
+                        ck.clone(),
+                        box nested_when(pre_var_expr.clone(), clock_true),
+                        box expr,
+                    ),
                 };
                 expr = minils::Expr {
                     typ: vec![typ.clone()],
@@ -163,11 +178,11 @@ fn nested_when(expr: minils::Expr, clock: Clock) -> minils::Expr {
         Clock::Const => expr,
         Clock::Ck(v) => {
             let mut expr = expr;
-            for (ck,b) in v {
+            for (ck, b) in v {
                 let clock = match expr.clock.clone() {
-                    Clock::Const => Clock::Ck(vec![(ck.clone(),b)]),
+                    Clock::Const => Clock::Ck(vec![(ck.clone(), b)]),
                     Clock::Ck(mut v) => {
-                        v.push((ck.clone(),b));
+                        v.push((ck.clone(), b));
                         Clock::Ck(v)
                     }
                 };

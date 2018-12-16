@@ -30,7 +30,10 @@ fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut nor
     let clock = gen_clock_ident(expr.clock.clone());
     let mut defined_params;
     let expr_ = match expr.expr {
-        minils::BaseExpr::FunCall(fun, params) => {
+        minils::BaseExpr::FunCall(fun, params, mut reset) => {
+            if let Some(s) = &mut reset {
+                *s = ident::gen_ident(s.clone(), 0);
+            }
             let params = params
                 .into_iter()
                 .map(|param| normalize_a(&idents[0], param, node))
@@ -41,6 +44,7 @@ fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut nor
                 defined_params_names.collect(),
                 ident::gen_ident(fun, 0),
                 params,
+                reset,
             )
         }
         minils::BaseExpr::Fby(v, box expr) => {
@@ -60,7 +64,8 @@ fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut nor
         }
     };
     for (new_param, param_type) in defined_params {
-        node.defined_params.insert(new_param, param_type);
+        node.defined_params
+            .insert(new_param, (param_type, clock.clone()));
     }
     node.eq_list.push(norm::Eq {
         typ: typ_,
@@ -74,7 +79,7 @@ fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Nod
     let typ_ = expr.typ[0].clone();
     let clock = gen_clock_ident(expr.clock.clone());
     let expr_ = match expr.expr {
-        minils::BaseExpr::FunCall(_, _) | minils::BaseExpr::Fby(_, _) => {
+        minils::BaseExpr::FunCall(_, _, _) | minils::BaseExpr::Fby(_, _) => {
             let new_ident = ident.new_ident();
             normalize_eq(&vec![new_ident.clone()], expr.clone(), node);
             return norm::ExprCA::new_var(new_ident.get_ident(), typ_, clock.clone());
@@ -108,7 +113,7 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
     let typ_ = expr.typ[0].clone();
     let clock = gen_clock_ident(expr.clock.clone());
     let expr_ = match expr.expr {
-        minils::BaseExpr::FunCall(_, _)
+        minils::BaseExpr::FunCall(_, _, _)
         | minils::BaseExpr::Fby(_, _)
         | minils::BaseExpr::IfThenElse(_, _, _)
         | minils::BaseExpr::Merge(_, _, _) => {

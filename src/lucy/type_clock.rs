@@ -33,7 +33,21 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
         }
         eq_list.push((vars, expr));
     }
-    let local_params = node.local_params.into_iter().map(|(s,t)| (s.clone(),t,variables.get(&s).unwrap_or(&(Type::Bool, Clock::Const)).1.clone())).collect();
+    let local_params = node
+        .local_params
+        .into_iter()
+        .map(|(s, t)| {
+            (
+                s.clone(),
+                t,
+                variables
+                    .get(&s)
+                    .unwrap_or(&(Type::Bool, Clock::Const))
+                    .1
+                    .clone(),
+            )
+        })
+        .collect();
     Ok(ck::Node {
         name: node.name,
         in_params: node.in_params,
@@ -67,14 +81,14 @@ fn annotate_expr(
             annotate_ifthenelse(cond, e_t, e_f, vars)?
         }
         typ::BaseExpr::Var(s) => annotate_var(s, vars),
-        typ::BaseExpr::FunCall(s, exprs) => annotate_funcall(s, exprs, vars)?,
+        typ::BaseExpr::FunCall(s, exprs, ck) => annotate_funcall(s, exprs, ck, vars)?,
         typ::BaseExpr::Current(s, v) => annotate_current(s, v, vars),
         typ::BaseExpr::Pre(box e) => {
             let e = annotate_expr(e, vars)?;
             let clock = e.clock.clone();
             (ck::BaseExpr::Pre(box e), clock)
-        },
-        typ::BaseExpr::Arrow(box e1, box e2) => annotate_arrow(e1, e2, vars)?
+        }
+        typ::BaseExpr::Arrow(box e1, box e2) => annotate_arrow(e1, e2, vars)?,
     };
     Ok(ck::Expr { expr, typ, clock })
 }
@@ -135,7 +149,7 @@ fn annotate_merge(
             ));
         }
         Clock::Ck(v) => {
-            if let Some((ck_,true)) = v.last() {
+            if let Some((ck_, true)) = v.last() {
                 if ck_ != &ck {
                     return Err(String::from(
                         "Left expression in a merge should have a clock on true(merge clock)",
@@ -156,7 +170,7 @@ fn annotate_merge(
             ));
         }
         Clock::Ck(v) => {
-            if let Some((ck_,false)) = v.last() {
+            if let Some((ck_, false)) = v.last() {
                 if ck_ != &ck {
                     return Err(String::from(
                         "Left expression in a merge should have a clock on false(merge clock)",
@@ -220,12 +234,14 @@ fn annotate_var(var: String, vars: &HashMap<String, (Type, Clock)>) -> (ck::Base
 fn annotate_funcall(
     fun: String,
     exprs: Vec<typ::Expr>,
+    reset: Option<String>,
     vars: &HashMap<String, (Type, Clock)>,
 ) -> Result<(ck::BaseExpr, Clock), String> {
     let mut exprs_ = vec![];
     for expr in exprs {
         exprs_.push(annotate_expr(expr, vars)?);
     }
+    let clock = exprs_[0].clock.clone();
     for i in 0..exprs_.len() {
         for j in 0..exprs_.len() {
             if !Clock::is_compatible(&exprs_[i].clock, &exprs_[j].clock) {
@@ -239,8 +255,15 @@ fn annotate_funcall(
             lower_clock(&mut exprs_[j], &clock_i);
         }
     }
-    let clock = exprs_[0].clock.clone();
-    Ok((ck::BaseExpr::FunCall(fun, exprs_), clock))
+    if let Some(reset) = reset.clone() {
+        let reset_clock = &vars.get(&reset).unwrap().1;
+        if !reset_clock.is_faster_or_equal_than(&clock) {
+            return Err(String::from(
+                "Reset clock should be faster or equal than the clock of a node call",
+            ));
+        }
+    }
+    Ok((ck::BaseExpr::FunCall(fun, exprs_, reset), clock))
 }
 
 fn annotate_current(
@@ -268,7 +291,9 @@ fn annotate_arrow(
     let expr_1 = annotate_expr(expr_1, vars)?;
     let expr_2 = annotate_expr(expr_2, vars)?;
     if !Clock::is_compatible(&expr_1.clock, &expr_2.clock) {
-        return Err(String::from("The two clocks of the two expressions in an arrow construct should be the same"));
+        return Err(String::from(
+            "The two clocks of the two expressions in an arrow construct should be the same",
+        ));
     }
     let clock = expr_1.clock.clone();
     Ok((ck::BaseExpr::Arrow(box expr_1, box expr_2), clock))
@@ -295,7 +320,7 @@ fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
             lower_clock(e2, clock);
             lower_clock(e3, clock);
         }
-        ck::BaseExpr::FunCall(_, v) => {
+        ck::BaseExpr::FunCall(_, v, _) => {
             v.iter_mut().for_each(|e| lower_clock(e, clock));
         }
         _ => (),

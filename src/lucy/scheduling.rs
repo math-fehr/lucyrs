@@ -97,16 +97,17 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
                 vec![s]
             }
         }
-        FunCall(_, exprs) => {
+        FunCall(_, exprs, ck) => {
             let mut v = vec![];
             for expr in exprs {
                 v.append(&mut get_var_deps(&expr, node));
             }
+            if let Some(ck) = ck {
+                v.push(ck);
+            }
             v
-        },
-        Current(s,_) => {
-            vec![s]
-        },
+        }
+        Current(s, _) => vec![s],
         Arrow(box e1, box e2) => {
             let mut v = get_var_deps(&e1, node);
             v.append(&mut get_var_deps(&e2, node));
@@ -114,4 +115,3 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
         }
     }
 }
-

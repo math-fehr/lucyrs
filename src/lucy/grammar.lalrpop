@@ -223,7 +223,8 @@ PreNot: Expr = {
 
 FunCall: Expr = {
     Value => <>,
-    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v),
+    <i:Ident> "(" <v:CommaOpt<Expr>> ")" => Expr::FunCall(i,v,None),
+    <i:Ident> "(" <v:CommaOpt<Expr>> ")" "every" <r:Ident> => Expr::FunCall(i,v, Some(r)),
 }
 
 Value: Expr = {

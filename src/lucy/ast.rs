@@ -19,7 +19,7 @@ pub enum Expr {
     Fby(Value, Box<Expr>),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
-    FunCall(String, Vec<Expr>),
+    FunCall(String, Vec<Expr>, Option<String>),
     Current(String, Value),
     Pre(Box<Expr>),
     Arrow(Box<Expr>, Box<Expr>),

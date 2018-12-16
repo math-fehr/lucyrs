@@ -1,4 +1,4 @@
-use crate::ast::{Clock, Value};
+use crate::ast::{Clock, Type, Value};
 use crate::ident;
 use crate::minils::normalized_ast as norm;
 use crate::obc::ast as obc;
@@ -10,11 +10,20 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     let name = node.name;
     let step_inputs = node.in_params;
     let mut step_returns = node.out_params;
-    let mut step_vars = node.defined_params;
     let mut temp_instances = HashMap::new();
     let mut step_stmts = vec![];
     for eq in node.eq_list {
-        eq_to_obc(eq, &memory, &mut temp_instances, &mut step_stmts);
+        eq_to_obc(
+            eq,
+            &memory,
+            &mut temp_instances,
+            &mut step_stmts,
+            &node.defined_params,
+        );
+    }
+    let mut step_vars = HashMap::new();
+    for (s, (t, _)) in node.defined_params {
+        step_vars.insert(s, t);
     }
     let mut instances = HashMap::new();
     for (s, i) in temp_instances {
@@ -26,7 +35,10 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
         if memory.get(s).is_some() {
             let s_result = s.clone() + "_result";
             step_vars.insert(s_result.clone(), t.clone());
-            step_stmts.push(obc::Stmt::Assignment(s_result.clone(), obc::Expr::State(s.clone())));
+            step_stmts.push(obc::Stmt::Assignment(
+                s_result.clone(),
+                obc::Expr::State(s.clone()),
+            ));
             *s = s_result;
         }
     }
@@ -65,13 +77,15 @@ fn eq_to_obc(
     memory: &HashMap<String, Value>,
     instances: &mut HashMap<String, u32>,
     step_stmts: &mut Vec<obc::Stmt>,
+    step_vars: &HashMap<String, (Type, Clock)>,
 ) {
-    let mut stmt = match eq.eq {
+    match eq.eq {
         norm::ExprEqBase::Fby(s, _, box expr) => {
             let expr = a_to_obc(expr, memory, instances, step_stmts);
-            obc::Stmt::Assignment(s, expr)
+            let stmt = add_control(obc::Stmt::Assignment(s, expr), eq.clock);
+            step_stmts.push(stmt);
         }
-        norm::ExprEqBase::FunCall(pat, fun, exprs) => {
+        norm::ExprEqBase::FunCall(pat, fun, exprs, r) => {
             let n_fun = if let Some(n) = instances.get(&fun) {
                 n + 1
             } else {
@@ -79,15 +93,33 @@ fn eq_to_obc(
             };
             instances.insert(fun.clone(), n_fun);
             let ident = ident::gen_ident(fun, n_fun - 1);
+            if let Some(r) = r {
+                let mut stmt = obc::Stmt::Reset(ident.clone());
+                stmt = obc::Stmt::Control(r.clone(), vec![stmt], vec![]);
+                let r_clock = match step_vars.get(&r) {
+                    Some((_, ck)) => ck.clone(),
+                    None => Clock::Const,
+                };
+                stmt = add_control(stmt, r_clock);
+                step_stmts.push(stmt);
+            }
             let exprs = exprs
                 .into_iter()
                 .map(|e| a_to_obc(e, memory, instances, step_stmts))
                 .collect();
-            obc::Stmt::Step(pat, ident, exprs)
+            let stmt = add_control(obc::Stmt::Step(pat, ident, exprs), eq.clock);
+            step_stmts.push(stmt);
         }
-        norm::ExprEqBase::ExprCA(s, box expr) => ca_to_obc(s, expr, memory, instances, step_stmts),
+        norm::ExprEqBase::ExprCA(s, box expr) => {
+            let mut stmt = ca_to_obc(s, expr, memory, instances, step_stmts);
+            stmt = add_control(stmt, eq.clock);
+            step_stmts.push(stmt);
+        }
     };
-    match eq.clock {
+}
+
+fn add_control(mut stmt: obc::Stmt, clock: Clock) -> obc::Stmt {
+    match clock {
         Clock::Const => (),
         Clock::Ck(hm) => {
             for (ck, b) in hm {
@@ -99,7 +131,7 @@ fn eq_to_obc(
             }
         }
     }
-    step_stmts.push(stmt);
+    stmt
 }
 
 fn ca_to_obc(

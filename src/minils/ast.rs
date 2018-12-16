@@ -26,5 +26,5 @@ pub enum BaseExpr {
     Merge(String, Box<Expr>, Box<Expr>),
     IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
-    FunCall(String, Vec<Expr>),
+    FunCall(String, Vec<Expr>, Option<String>),
 }

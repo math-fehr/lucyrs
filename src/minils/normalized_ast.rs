@@ -7,7 +7,7 @@ pub struct Node {
     pub name: String,
     pub in_params: Vec<(String, Type)>,
     pub out_params: Vec<(String, Type)>,
-    pub defined_params: HashMap<String, Type>,
+    pub defined_params: HashMap<String, (Type, Clock)>,
     pub eq_list: Vec<Eq>,
 }
 
@@ -21,7 +21,7 @@ pub struct Eq {
 #[derive(Debug, Clone)]
 pub enum ExprEqBase {
     Fby(String, Value, Box<ExprA>),
-    FunCall(Vec<String>, String, Vec<ExprA>),
+    FunCall(Vec<String>, String, Vec<ExprA>, Option<String>),
     ExprCA(String, Box<ExprCA>),
 }
 
