@@ -226,7 +226,7 @@ fn annotate_ifthenelse(
 
 fn annotate_var(var: String, vars: &HashMap<String, (Type, Clock)>) -> (ck::BaseExpr, Clock) {
     match vars.get(&var) {
-        None => (ck::BaseExpr::Var(var), Clock::Const),
+        None => (ck::BaseExpr::Var(var), Clock::Ck(vec![])),
         Some(ck) => (ck::BaseExpr::Var(var), ck.1.clone()),
     }
 }
@@ -288,13 +288,15 @@ fn annotate_arrow(
     expr_2: typ::Expr,
     vars: &HashMap<String, (Type, Clock)>,
 ) -> Result<(ck::BaseExpr, Clock), String> {
-    let expr_1 = annotate_expr(expr_1, vars)?;
-    let expr_2 = annotate_expr(expr_2, vars)?;
+    let mut expr_1 = annotate_expr(expr_1, vars)?;
+    let mut expr_2 = annotate_expr(expr_2, vars)?;
     if !Clock::is_compatible(&expr_1.clock, &expr_2.clock) {
         return Err(String::from(
             "The two clocks of the two expressions in an arrow construct should be the same",
         ));
     }
+    lower_clock(&mut expr_1, &expr_2.clock);
+    lower_clock(&mut expr_2, &expr_1.clock);
     let clock = expr_1.clock.clone();
     Ok((ck::BaseExpr::Arrow(box expr_1, box expr_2), clock))
 }
@@ -305,24 +307,34 @@ fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
     }
     if let Clock::Ck(_) = &expr.clock {
         assert!(&expr.clock == clock);
+        return;
     }
     expr.clock = clock.clone();
     match &mut expr.expr {
+        ck::BaseExpr::Value(_)
+            | ck::BaseExpr::Var(_)
+            | ck::BaseExpr::Current(_, _)
+            => (),
+        ck::BaseExpr::When(_,_,_) => unreachable!(),
+        ck::BaseExpr::Pre(_) => unreachable!(),
+        ck::BaseExpr::Arrow(e_1, e_2) => {
+            lower_clock(e_1, clock);
+            lower_clock(e_2, clock);
+        }
         ck::BaseExpr::UnOp(_, box e) => lower_clock(e, clock),
         ck::BaseExpr::BinOp(_, box e1, box e2) => {
             lower_clock(e1, clock);
             lower_clock(e2, clock);
-        }
+        },
         ck::BaseExpr::Merge(_, _, _) => unreachable!(),
         ck::BaseExpr::Fby(_, box e) => lower_clock(e, clock),
         ck::BaseExpr::IfThenElse(box e1, box e2, box e3) => {
             lower_clock(e1, clock);
             lower_clock(e2, clock);
             lower_clock(e3, clock);
-        }
+        },
         ck::BaseExpr::FunCall(_, v, _) => {
             v.iter_mut().for_each(|e| lower_clock(e, clock));
-        }
-        _ => (),
+        },
     }
 }

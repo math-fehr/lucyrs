@@ -42,15 +42,17 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
             *s = s_result;
         }
     }
-    for (s, _) in &memory {
-        step_stmts.push(obc::Stmt::StateAssignment(
-            s.clone(),
-            obc::Expr::Var(s.clone()),
-        ));
+    for (s, (_, c)) in &memory {
+        let stmt = obc::Stmt::StateAssignment(s.clone(), obc::Expr::Var(s.clone()));
+        step_stmts.push(add_control(stmt, c.clone()));
+    }
+    let mut memory_without_clocks = HashMap::new();
+    for (s, (t, _)) in memory {
+        memory_without_clocks.insert(s, t);
     }
     obc::Machine {
         name,
-        memory,
+        memory: memory_without_clocks,
         instances,
         step_inputs,
         step_returns,
@@ -59,12 +61,12 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     }
 }
 
-fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
+fn get_memories(node: &norm::Node) -> HashMap<String, (Value, Clock)> {
     let mut memory = HashMap::new();
     for eq in &node.eq_list {
         match &eq.eq {
             norm::ExprEqBase::Fby(s, v, _) => {
-                memory.insert(s.clone(), v.clone());
+                memory.insert(s.clone(), (v.clone(), eq.clock.clone()));
             }
             _ => (),
         }
@@ -74,7 +76,7 @@ fn get_memories(node: &norm::Node) -> HashMap<String, Value> {
 
 fn eq_to_obc(
     eq: norm::Eq,
-    memory: &HashMap<String, Value>,
+    memory: &HashMap<String, (Value, Clock)>,
     instances: &mut HashMap<String, u32>,
     step_stmts: &mut Vec<obc::Stmt>,
     step_vars: &HashMap<String, (Type, Clock)>,
@@ -137,7 +139,7 @@ fn add_control(mut stmt: obc::Stmt, clock: Clock) -> obc::Stmt {
 fn ca_to_obc(
     lhs: String,
     expr: norm::ExprCA,
-    memory: &HashMap<String, Value>,
+    memory: &HashMap<String, (Value, Clock)>,
     instances: &mut HashMap<String, u32>,
     step_stmts: &mut Vec<obc::Stmt>,
 ) -> obc::Stmt {
@@ -156,7 +158,7 @@ fn ca_to_obc(
 
 fn a_to_obc(
     expr: norm::ExprA,
-    memory: &HashMap<String, Value>,
+    memory: &HashMap<String, (Value, Clock)>,
     instances: &mut HashMap<String, u32>,
     step_stmts: &mut Vec<obc::Stmt>,
 ) -> obc::Expr {
