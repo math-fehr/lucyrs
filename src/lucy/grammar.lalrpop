@@ -142,8 +142,14 @@ Expr: Expr = {
 
 
 IfThenElse: Expr = {
-    Merge => <>,
+    Arrow => <>,
     "if" <i:Expr> "then" <t:Expr> "else" <e:Expr> => Expr::IfThenElse(box i, box t, box e),
+}
+
+Arrow: Expr = {
+    Merge => <>,
+    <l:ConstValue> "fby" <r:Arrow> => Expr::Fby(l, box r),
+    <l:Merge> "->" <r:Arrow> => Expr::Arrow(box l, box r),
 }
 
 Merge: Expr = {
@@ -152,16 +158,10 @@ Merge: Expr = {
 }
 
 When: Expr = {
-    Arrow => <>,
+    Impl => <>,
     <l:When> "when" <i:Ident> => Expr::When(box l, i, true),
     <l:When> "whenot" <i:Ident> => Expr::When(box l, i, false),
 }
-
-Arrow: Expr = {
-    Impl => <>,
-    <l:ConstValue> "fby" <r:Arrow> => Expr::Fby(l, box r),
-}
-
 
 Impl: Expr = {
     Or => <>,
@@ -215,6 +215,7 @@ Mul: Expr = {
 
 PreNot: Expr = {
     FunCall => <>,
+    "pre" <PreNot> => Expr::Pre(box <>),
     "not" <PreNot> => Expr::UnOp(UnOp::Not, box <>),
     "-" <PreNot> => Expr::UnOp(UnOp::UMinus, box <>),
     "current" <i:Ident> <c:ConstValue> => Expr::Current(i,c),

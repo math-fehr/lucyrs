@@ -146,7 +146,7 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
         Stmt::Assignment(s, expr) => format!("{}{} = {};\n", indent, s, expr_to_rust(expr)),
         Stmt::StateAssignment(s, expr) => {
             format!("{}self.{} = {};\n", indent, s, expr_to_rust(expr))
-        },
+        }
         Stmt::Step(results, fun, params) => {
             let params = params
                 .iter()
@@ -162,7 +162,7 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
                 "{}let ({}) = self.{}.step({});\n",
                 indent, results_str, fun, params
             );
-            for (l,r) in results.iter().zip(results_temp) {
+            for (l, r) in results.iter().zip(results_temp) {
                 step += &format!("{}{} = {};\n", indent, l, r);
             }
             step
@@ -247,7 +247,13 @@ fn type_to_rust(typ: &Type) -> String {
 fn value_to_rust(val: &Value) -> String {
     match val {
         Value::Int(i) => i.to_string(),
-        Value::Real(r) => r.to_string() + "f32",
+        Value::Real(r) => {
+            if r.is_nan() {
+                String::from("std::f32::NAN")
+            } else {
+                r.to_string() + "f32"
+            }
+        }
         Value::Bool(b) => b.to_string(),
     }
 }

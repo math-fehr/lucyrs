@@ -60,6 +60,35 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
         typ::BaseExpr::Current(s, v) => {
             let clock = node.local_params.iter().find(|(s_,_,_)| s_ == &s).unwrap();
             to_minils_current(s, v, clock.2.clone(), expr.typ[0].clone(), node)
+        },
+        typ::BaseExpr::Pre(box e) => {
+            let e = to_minils_expr(e, node);
+            let value = match &e.typ[0] {
+                Type::Int => Value::Int(-12341234),
+                Type::Real => Value::Real(std::f32::NAN),
+                Type::Bool => Value::Bool(false),
+            };
+            minils::BaseExpr::Fby(value, box e)
+        },
+        typ::BaseExpr::Arrow(box e_1, box e_2) => {
+            let clock = e_1.clock.clone();
+            let typ = e_1.typ.clone();
+            let false_expr = typ::Expr {
+                expr: typ::BaseExpr::Value(Value::Bool(false)),
+                typ: vec![Type::Bool],
+                clock: clock.clone(),
+            };
+            let cond_expr = typ::Expr {
+                expr: typ::BaseExpr::Fby(Value::Bool(true), box false_expr),
+                typ: vec![Type::Bool],
+                clock: clock.clone(),
+            };
+            let ifthenelse_expr = typ::Expr {
+                expr: typ::BaseExpr::IfThenElse(box cond_expr, box e_1, box e_2),
+                typ,
+                clock,
+            };
+            return to_minils_expr(ifthenelse_expr, node);
         }
     };
     minils::Expr {

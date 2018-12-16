@@ -69,6 +69,12 @@ fn annotate_expr(
         typ::BaseExpr::Var(s) => annotate_var(s, vars),
         typ::BaseExpr::FunCall(s, exprs) => annotate_funcall(s, exprs, vars)?,
         typ::BaseExpr::Current(s, v) => annotate_current(s, v, vars),
+        typ::BaseExpr::Pre(box e) => {
+            let e = annotate_expr(e, vars)?;
+            let clock = e.clock.clone();
+            (ck::BaseExpr::Pre(box e), clock)
+        },
+        typ::BaseExpr::Arrow(box e1, box e2) => annotate_arrow(e1, e2, vars)?
     };
     Ok(ck::Expr { expr, typ, clock })
 }
@@ -252,6 +258,20 @@ fn annotate_current(
             }
         }
     }
+}
+
+fn annotate_arrow(
+    expr_1: typ::Expr,
+    expr_2: typ::Expr,
+    vars: &HashMap<String, (Type, Clock)>,
+) -> Result<(ck::BaseExpr, Clock), String> {
+    let expr_1 = annotate_expr(expr_1, vars)?;
+    let expr_2 = annotate_expr(expr_2, vars)?;
+    if !Clock::is_compatible(&expr_1.clock, &expr_2.clock) {
+        return Err(String::from("The two clocks of the two expressions in an arrow construct should be the same"));
+    }
+    let clock = expr_1.clock.clone();
+    Ok((ck::BaseExpr::Arrow(box expr_1, box expr_2), clock))
 }
 
 fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {

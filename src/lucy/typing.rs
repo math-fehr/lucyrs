@@ -87,6 +87,8 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         ast::Expr::Var(ident) => type_var(ident, context),
         ast::Expr::FunCall(ident, params) => type_funcall(ident, params, context),
         ast::Expr::Current(ident, v) => type_current(ident, v, context),
+        ast::Expr::Pre(box e) => type_pre(e, context),
+        ast::Expr::Arrow(box e1, box e2) => type_arrow(e1, e2, context),
     }
 }
 
@@ -330,4 +332,32 @@ fn type_current(ident: String, value: Value, context: &Context) -> Result<Expr, 
     } else {
         Err(format!("Variable {} used but not declared", &ident))
     }
+}
+
+fn type_pre(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
+    let typed_expr = type_expr(expr, context)?;
+    if typed_expr.typ.len() != 1 {
+        return Err(String::from("pre operator cannot be applied to a tuple"));
+    }
+    let typ = typed_expr.typ.clone();
+    Ok(Expr {
+        expr: BaseExpr::Pre(box typed_expr),
+        typ,
+    })
+}
+
+fn type_arrow(expr_1: ast::Expr, expr_2: ast::Expr, context: &Context) -> Result<Expr, String> {
+    let expr_1 = type_expr(expr_1, context)?;
+    let expr_2 = type_expr(expr_2, context)?;
+    if expr_1.typ.len() != 1 || expr_2.typ.len() != 1 {
+        return Err(String::from("In an arrow construct, the two expressions hsould not be tuples"));
+    }
+    if expr_1.typ[0] != expr_2.typ[0] {
+        return Err(String::from("In an arrow construct, both expressions should have same size"));
+    }
+    let typ = expr_1.typ.clone();
+    Ok(Expr {
+        expr: BaseExpr::Arrow(box expr_1, box expr_2),
+        typ,
+    })
 }

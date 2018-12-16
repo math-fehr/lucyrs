@@ -28,4 +28,6 @@ pub enum BaseExpr {
     Var(String),
     FunCall(String, Vec<Expr>),
     Current(String, Value),
+    Pre(Box<Expr>),
+    Arrow(Box<Expr>, Box<Expr>),
 }
