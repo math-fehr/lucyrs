@@ -2,6 +2,7 @@
 //! translate it into typed LucyRS AST, then into minils AST.
 
 pub mod ast;
+pub mod check_valid_pre;
 pub mod clock_typed_ast;
 pub mod grammar;
 pub mod scheduling;
@@ -47,7 +48,13 @@ pub fn type_nodes(nodes: Vec<ast::Node>) -> Vec<typ::Node> {
     if let Err(message) = clock_nodes {
         panic!("Clock typing error: {}", message);
     }
-    clock_nodes.unwrap()
+    let clock_nodes = clock_nodes.unwrap();
+
+    if let Err(message) = check_valid_pre::check_valid_pre(&clock_nodes) {
+        panic!(format!("Error: {}", message));
+    }
+
+    clock_nodes
 }
 
 /// Translate typed LucyRS nodes into minils
