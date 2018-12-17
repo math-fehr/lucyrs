@@ -5,20 +5,24 @@ use crate::lucy::ast::Expr::*;
 use crate::lucy::ast::{Expr, Node};
 
 use petgraph::graphmap::GraphMap;
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 /// Schedule the untyped LucyRS nodes
 /// Also, check if there is multiple definitions of variables in nodes
-pub fn schedule(nodes: &mut Vec<Node>) -> bool {
-    for node in nodes {
+pub fn schedule(nodes: Vec<Node>) -> Result<Vec<Node>, String> {
+    let mut nodes = schedule_nodes(nodes)?;
+    for node in &mut nodes {
         if !check_multiple_definition(node) {
-            return false;
+            return Err(String::from(
+                "A variable was defined multiple times in a node",
+            ));
         }
         if !check_causality_node(node) {
-            return false;
+            return Err(String::from("A node is not causal"));
         }
     }
-    true
+    Ok(nodes)
 }
 
 /// Check if there is multiple definitions of variables
@@ -33,6 +37,72 @@ fn check_multiple_definition(node: &Node) -> bool {
         }
     }
     true
+}
+
+fn schedule_nodes(nodes: Vec<Node>) -> Result<Vec<Node>, String> {
+    let mut causality_graph = GraphMap::<&str, (), petgraph::Directed>::new();
+    let mut nodes_hm = HashMap::<&str, &Node>::new();
+    for i in 0..nodes.len() {
+        causality_graph.add_node(&nodes[i].name);
+        nodes_hm.insert(&nodes[i].name, &nodes[i]);
+    }
+    for node in &*nodes {
+        for (_, expr) in &node.eq_list {
+            for called_node in get_node_deps(expr) {
+                causality_graph.add_edge(&node.name, called_node, ());
+            }
+        }
+    }
+    let topo_sort = petgraph::algo::toposort(&causality_graph, None);
+    if let Ok(topo_sort) = topo_sort {
+        let nodes = topo_sort
+            .into_iter()
+            .map(|node| (*nodes_hm.get(&node).unwrap()).clone())
+            .collect();
+        Ok(nodes)
+    } else {
+        Err(String::from("There is a cyclic call between the nodes"))
+    }
+}
+
+fn get_node_deps<'a>(expr: &'a Expr) -> Vec<&'a str> {
+    match expr {
+        Value(_) | Var(_) | Current(_, _) => vec![],
+        Pre(box e) => get_node_deps(&e),
+        Fby(_, box e) => get_node_deps(&e),
+        UnOp(_, box e) => get_node_deps(&e),
+        BinOp(_, box e1, box e2) => {
+            let mut v = get_node_deps(&e1);
+            v.append(&mut get_node_deps(&e2));
+            v
+        }
+        When(box expr, _, _) => get_node_deps(&expr),
+        Merge(ck, box e1, box e2) => {
+            let mut v = get_node_deps(&e1);
+            v.append(&mut get_node_deps(&e2));
+            v.push(ck);
+            v
+        }
+        IfThenElse(box e1, box e2, box e3) => {
+            let mut v = get_node_deps(&e1);
+            v.append(&mut get_node_deps(&e2));
+            v.append(&mut get_node_deps(&e3));
+            v
+        }
+        FunCall(fun, exprs, _) => {
+            let mut v = vec![];
+            for expr in exprs {
+                v.append(&mut get_node_deps(&expr));
+            }
+            v.push(&fun);
+            v
+        }
+        Arrow(box e1, box e2) => {
+            let mut v = get_node_deps(&e1);
+            v.append(&mut get_node_deps(&e2));
+            v
+        }
+    }
 }
 
 /// Check if the node is causal, and schedule it if it is

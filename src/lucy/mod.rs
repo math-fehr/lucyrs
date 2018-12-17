@@ -1,36 +1,39 @@
 //! This module contains the functions to parse a LucyRS file, and to
 //! translate it into typed LucyRS AST, then into minils AST.
 
+pub mod ast;
+pub mod clock_typed_ast;
+pub mod grammar;
 pub mod scheduling;
 pub mod to_minils;
-pub mod grammar;
-pub mod ast;
-pub mod typed_ast;
-pub mod clock_typed_ast;
 pub mod type_clock;
+pub mod typed_ast;
 pub mod typing;
 
 use std::fs::File;
 use std::io::Read;
 
-use crate::minils::ast as mls;
 use self::clock_typed_ast as typ;
+use crate::minils::ast as mls;
 
 /// Parse a LucyRS file and return the node list
 pub fn parse_file(filename: &str) -> Vec<ast::Node> {
     let mut f = File::open(filename).expect("file not found");
     let mut contents = String::new();
-    f.read_to_string(&mut contents).expect(&("Error while loading file ".to_owned() + filename));
+    f.read_to_string(&mut contents)
+        .expect(&("Error while loading file ".to_owned() + filename));
     grammar::FileParser::new().parse(&contents).unwrap()
 }
 
 /// Type the LucyRS nodes
-pub fn type_nodes(mut nodes: Vec<ast::Node>) -> Vec<typ::Node> {
-    if !scheduling::schedule(&mut nodes) {
-        panic!("The program is not causal");
+pub fn type_nodes(nodes: Vec<ast::Node>) -> Vec<typ::Node> {
+    let scheduled_nodes = scheduling::schedule(nodes);
+    if let Err(message) = scheduled_nodes {
+        panic!("Causality Error: {}", message);
     }
+    let scheduled_nodes = scheduled_nodes.unwrap();
 
-    let typed_nodes = typing::annotate_types(nodes);
+    let typed_nodes = typing::annotate_types(scheduled_nodes);
     if let Err(message) = typed_nodes {
         panic!("Typing Error: {}", message);
     }
