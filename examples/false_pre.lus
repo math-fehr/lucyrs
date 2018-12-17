@@ -1,6 +1,6 @@
 node check(x : bool) returns (r : int);
-var y: int when x;
+var y: int;
 let
   y = 1 -> 2 -> pre(pre(y));
-  r = merge x y (0 whenot x);
+  r = if x then y else 0;
 tel;

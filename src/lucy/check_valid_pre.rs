@@ -7,7 +7,7 @@ use crate::lucy::clock_typed_ast::{BaseExpr, Expr, Node};
 pub fn check_valid_pre(nodes: &Vec<Node>) -> Result<(), String> {
     for node in nodes {
         for (idents, expr) in &node.eq_list {
-            if !check_valid_pre_expr(expr, 0) {
+            if !check_valid_pre_expr(expr, false) {
                 return Err(format!("A pre construct will give an uninitialized value in the expression where {} is defined", idents[0]));
             }
         }
@@ -16,8 +16,8 @@ pub fn check_valid_pre(nodes: &Vec<Node>) -> Result<(), String> {
 }
 
 /// Check if the pre deifned in the expression are correct.
-/// Depth represent the number of steps that can be traveled back by pre.
-fn check_valid_pre_expr(expr: &Expr, depth: i32) -> bool {
+/// Depth is true if a pre construct is allowed
+fn check_valid_pre_expr(expr: &Expr, depth: bool) -> bool {
     match &expr.expr {
         BaseExpr::Value(_) | BaseExpr::Var(_) | BaseExpr::Current(_, _) => true,
         BaseExpr::UnOp(_, box e) => check_valid_pre_expr(&e, depth),
@@ -43,14 +43,14 @@ fn check_valid_pre_expr(expr: &Expr, depth: i32) -> bool {
             true
         }
         BaseExpr::Pre(box e) => {
-            if depth == 0 {
-                false
+            if depth {
+                check_valid_pre_expr(&e, false)
             } else {
-                check_valid_pre_expr(&e, depth - 1)
+                false
             }
         }
         BaseExpr::Arrow(box e_1, box e_2) => {
-            check_valid_pre_expr(&e_1, depth) && check_valid_pre_expr(&e_2, depth + 1)
+            check_valid_pre_expr(&e_1, depth) && check_valid_pre_expr(&e_2, true)
         }
     }
 }

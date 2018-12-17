@@ -137,7 +137,7 @@ fn check_causality_node(node: &mut Node) -> Result<(), String> {
             Ok(())
         },
         Err(cycle) => {
-            Err(format!("The is a cycle in variables definitions: one variable assigned next to {} is in the cycle", node.eq_list[cycle.node_id()].0[0]))
+            Err(format!("There is a cycle in variables definitions: one variable assigned next to {} is in the cycle", node.eq_list[cycle.node_id()].0[0]))
         }
     }
 }

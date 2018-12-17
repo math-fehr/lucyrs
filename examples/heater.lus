@@ -1,0 +1,10 @@
+node main(consigne: real) 
+returns (u: bool; temp: real);
+let
+  u = if temp < consigne - 1.0 then true
+      else if temp > consigne + 1.0 then false
+      else false -> pre u;
+  temp = 0.0 -> pre(temp + 0.1 * (if u then 0.1 * (50.0 - temp) 
+               else 0.1 * (0.0 - temp)));
+tel;
+ 
