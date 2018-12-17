@@ -17,36 +17,32 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
     for (var, typ) in &node.in_params {
         variables.insert(var.clone(), (typ.clone(), Clock::Ck(vec![])));
     }
-    let mut defined_params = node.local_params.clone();
-    defined_params.append(&mut node.out_params.clone());
+    for (var, typ) in &node.out_params {
+        variables.insert(var.clone(), (typ.clone(), Clock::Ck(vec![])));
+    }
+    for (var, typ, ck) in &node.local_params {
+        variables.insert(var.clone(), (typ.clone(), Clock::Ck(ck.clone())));
+    }
+
     let mut eq_list = vec![];
     for (vars, expr) in node.eq_list {
         let expr = annotate_expr(expr, &variables)?;
         for var in &vars {
-            let typ = defined_params
-                .iter()
-                .find(|(s, _)| s == var)
-                .unwrap()
-                .1
-                .clone();
-            variables.insert(var.clone(), (typ, expr.clock.clone()));
+            let (typ, ck) = variables.get(var).unwrap();
+            if !Clock::is_compatible(ck, &expr.clock) {
+                return Err(format!(
+                    "Variable {} was declared with a clock {:?}, but its computed clock is {:?}",
+                    var, ck, expr.clock
+                ));
+            }
+            variables.insert(var.clone(), (typ.clone(), expr.clock.clone()));
         }
         eq_list.push((vars, expr));
     }
     let local_params = node
         .local_params
         .into_iter()
-        .map(|(s, t)| {
-            (
-                s.clone(),
-                t,
-                variables
-                    .get(&s)
-                    .unwrap_or(&(Type::Bool, Clock::Const))
-                    .1
-                    .clone(),
-            )
-        })
+        .map(|(s, t, ck)| (s, t, Clock::Ck(ck)))
         .collect();
     Ok(ck::Node {
         name: node.name,
@@ -127,7 +123,13 @@ fn annotate_when(
     let clock = match e.clock.clone() {
         Clock::Const => unreachable!(),
         Clock::Ck(mut v) => {
-            v.push((s.clone(), b));
+            if let Some((ck, _)) = v.last() {
+                if ck != &s {
+                    v.push((s.clone(), b));
+                }
+            } else {
+                v.push((s.clone(), b));
+            }
             Clock::Ck(v)
         }
     };
@@ -311,11 +313,8 @@ fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
     }
     expr.clock = clock.clone();
     match &mut expr.expr {
-        ck::BaseExpr::Value(_)
-            | ck::BaseExpr::Var(_)
-            | ck::BaseExpr::Current(_, _)
-            => (),
-        ck::BaseExpr::When(_,_,_) => unreachable!(),
+        ck::BaseExpr::Value(_) | ck::BaseExpr::Var(_) | ck::BaseExpr::Current(_, _) => (),
+        ck::BaseExpr::When(_, _, _) => unreachable!(),
         ck::BaseExpr::Pre(_) => unreachable!(),
         ck::BaseExpr::Arrow(e_1, e_2) => {
             lower_clock(e_1, clock);
@@ -325,16 +324,16 @@ fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
         ck::BaseExpr::BinOp(_, box e1, box e2) => {
             lower_clock(e1, clock);
             lower_clock(e2, clock);
-        },
+        }
         ck::BaseExpr::Merge(_, _, _) => unreachable!(),
         ck::BaseExpr::Fby(_, box e) => lower_clock(e, clock),
         ck::BaseExpr::IfThenElse(box e1, box e2, box e3) => {
             lower_clock(e1, clock);
             lower_clock(e2, clock);
             lower_clock(e3, clock);
-        },
+        }
         ck::BaseExpr::FunCall(_, v, _) => {
             v.iter_mut().for_each(|e| lower_clock(e, clock));
-        },
+        }
     }
 }

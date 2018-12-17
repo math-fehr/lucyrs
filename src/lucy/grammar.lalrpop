@@ -93,12 +93,19 @@ Node: Node = {
         };
         let ip = flatten(ip);
         let op = flatten(op);
-        let lp = flatten(lp);
-        Node{name:i, in_params:ip, out_params:op, local_params:lp, eq_list:el}
+        let mut lp_ = vec![];
+        for sub_v in lp {
+            let t = sub_v.1;
+            let ck = sub_v.2;
+            for name in sub_v.0 {
+                lp_.push((name, t.clone(), ck.clone()));
+            }
+        }
+        Node{name:i, in_params:ip, out_params:op, local_params:lp_, eq_list:el}
     }
 }
 
-LocalParams: Vec<(Vec<String>, Type)> = {
+LocalParams: Vec<(Vec<String>, Type, Vec<(String,bool)>)> = {
     "var" <ParamListSemiCol> => <>,
     () => vec![],
 }
@@ -112,8 +119,38 @@ InParams: Vec<(Vec<String>, Type)> = {
     }
 }
 
-ParamListSemiCol: Vec<(Vec<String>, Type)> = {
-    <p:(<Param> ";")+> => p
+ParamListSemiCol: Vec<(Vec<String>, Type, Vec<(String, bool)>)> = {
+    <p:(<ParamAndClock> ";")+> => p
+}
+
+ParamAndClock: (Vec<String>, Type, Vec<(String, bool)>) = {
+    <p:Param> <ck:OptionalClock> => (p.0,p.1,ck),
+}
+
+OptionalClock: Vec<(String, bool)> = {
+    <Clock?> => { if let Some(v) = <> {
+        v
+    } else {
+        vec![]
+    }
+    }
+}
+
+Clock: Vec<(String, bool)> = {
+    "when" <ck:Ident> <v:Clock?> => { if let Some(mut v) = v {
+               v.push((ck,true));
+               v
+           } else {
+               vec![(ck,true)]
+           }
+           },
+    "whenot" <ck:Ident> <v:Clock?> => { if let Some(mut v) = v {
+               v.push((ck,false));
+               v
+           } else {
+               vec![(ck,false)]
+           }
+           },
 }
 
 ParamList: Vec<(Vec<String>, Type)> = {

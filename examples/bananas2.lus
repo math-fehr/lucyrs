@@ -4,7 +4,7 @@ let
 tel;
 
 node count_bananas(banana : bool) returns (n : int);
-var bananas: int;
+var bananas: int when banana;
 let
   bananas = cumulative_sum(1 when banana);
   n = current bananas 0;

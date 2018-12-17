@@ -1,0 +1,6 @@
+node check(x : bool) returns (r : int);
+var y: int when x;
+let
+  y = 1 -> pre(y);
+  r = merge x y (0 whenot x);
+tel;

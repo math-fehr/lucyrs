@@ -1,5 +1,5 @@
 node check (ck: bool) returns (v: int);
-var n1, n2: int; notck: bool;
+var n1: int when ck; n2: int whenot ck;
 let
   n1 = 0 when ck;
   n2 = 1 whenot ck;
