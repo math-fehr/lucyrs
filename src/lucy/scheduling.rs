@@ -77,10 +77,9 @@ fn get_node_deps<'a>(expr: &'a Expr) -> Vec<&'a str> {
             v
         }
         When(box expr, _, _) => get_node_deps(&expr),
-        Merge(ck, box e1, box e2) => {
+        Merge(_, box e1, box e2) => {
             let mut v = get_node_deps(&e1);
             v.append(&mut get_node_deps(&e2));
-            v.push(ck);
             v
         }
         IfThenElse(box e1, box e2, box e3) => {

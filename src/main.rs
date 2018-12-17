@@ -4,8 +4,8 @@
 use std::env;
 
 pub mod ast;
-pub mod lucy;
 pub mod ident;
+pub mod lucy;
 pub mod minils;
 pub mod obc;
 
@@ -30,7 +30,7 @@ fn main() {
     let obc_machines = minils::to_obc(minils_nodes);
 
     // Compile it into rust file
-    let rust_code = obc::to_rust::obc_to_rust(&obc_machines, node_name);
+    let rust_code = obc::to_rust(obc_machines, node_name);
 
     // Output the file
     println!("{}", rust_code);
