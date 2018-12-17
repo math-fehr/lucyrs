@@ -33,5 +33,5 @@ pub enum BaseExpr {
     FunCall(String, Vec<Expr>, Option<String>),
     Current(String, Value),
     Pre(Box<Expr>),
-    Arrow(Box<Expr>, Box<Expr>),
+    Arrow(Vec<Expr>),
 }

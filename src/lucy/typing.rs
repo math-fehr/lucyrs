@@ -35,7 +35,12 @@ pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
         let node_name = node.name.clone();
         match type_node(node, &functions) {
             Ok(node) => typed_nodes.push(node),
-            Err(message) => {return Err(format!("Error while typing node {}: {}", node_name, message))}
+            Err(message) => {
+                return Err(format!(
+                    "Error while typing node {}: {}",
+                    node_name, message
+                ))
+            }
         }
     }
     Ok(typed_nodes)
@@ -103,7 +108,7 @@ fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
         ast::Expr::FunCall(ident, params, ck) => type_funcall(ident, params, ck, context),
         ast::Expr::Current(ident, v) => type_current(ident, v, context),
         ast::Expr::Pre(box e) => type_pre(e, context),
-        ast::Expr::Arrow(box e1, box e2) => type_arrow(e1, e2, context),
+        ast::Expr::Arrow(exprs) => type_arrow(exprs, context),
     }
 }
 
@@ -377,22 +382,28 @@ fn type_pre(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
     })
 }
 
-fn type_arrow(expr_1: ast::Expr, expr_2: ast::Expr, context: &Context) -> Result<Expr, String> {
-    let expr_1 = type_expr(expr_1, context)?;
-    let expr_2 = type_expr(expr_2, context)?;
-    if expr_1.typ.len() != 1 || expr_2.typ.len() != 1 {
-        return Err(String::from(
-            "In an arrow construct, the two expressions hsould not be tuples",
-        ));
+fn type_arrow(exprs: Vec<ast::Expr>, context: &Context) -> Result<Expr, String> {
+    let mut typed_exprs = vec![];
+    for expr in exprs {
+        typed_exprs.push(type_expr(expr, context)?);
     }
-    if expr_1.typ[0] != expr_2.typ[0] {
-        return Err(String::from(
-            "In an arrow construct, both expressions should have same size",
-        ));
+    for expr in &typed_exprs {
+        if expr.typ.len() != 1 {
+            return Err(String::from(
+                "In an arrow construct, the expressions should not be tuples",
+            ));
+        }
     }
-    let typ = expr_1.typ.clone();
+    let typ = typed_exprs[0].typ[0].clone();
+    for expr in &typed_exprs {
+        if typ != expr.typ[0] {
+            return Err(String::from(
+                "In an arrow construct, both expressions should have same size",
+            ));
+        }
+    }
     Ok(Expr {
-        expr: BaseExpr::Arrow(box expr_1, box expr_2),
-        typ,
+        expr: BaseExpr::Arrow(typed_exprs),
+        typ: vec![typ],
     })
 }

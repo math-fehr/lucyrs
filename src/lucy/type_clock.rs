@@ -84,7 +84,7 @@ fn annotate_expr(
             let clock = e.clock.clone();
             (ck::BaseExpr::Pre(box e), clock)
         }
-        typ::BaseExpr::Arrow(box e1, box e2) => annotate_arrow(e1, e2, vars)?,
+        typ::BaseExpr::Arrow(exprs) => annotate_arrow(exprs, vars)?,
     };
     Ok(ck::Expr { expr, typ, clock })
 }
@@ -286,21 +286,29 @@ fn annotate_current(
 }
 
 fn annotate_arrow(
-    expr_1: typ::Expr,
-    expr_2: typ::Expr,
+    exprs: Vec<typ::Expr>,
     vars: &HashMap<String, (Type, Clock)>,
 ) -> Result<(ck::BaseExpr, Clock), String> {
-    let mut expr_1 = annotate_expr(expr_1, vars)?;
-    let mut expr_2 = annotate_expr(expr_2, vars)?;
-    if !Clock::is_compatible(&expr_1.clock, &expr_2.clock) {
-        return Err(String::from(
-            "The two clocks of the two expressions in an arrow construct should be the same",
-        ));
+    let mut annotated_exprs = vec![];
+    for expr in exprs {
+        annotated_exprs.push(annotate_expr(expr, vars)?);
     }
-    lower_clock(&mut expr_1, &expr_2.clock);
-    lower_clock(&mut expr_2, &expr_1.clock);
-    let clock = expr_1.clock.clone();
-    Ok((ck::BaseExpr::Arrow(box expr_1, box expr_2), clock))
+    let n = annotated_exprs.len();
+    for i in 0..n {
+        for j in 0..i {
+            if !Clock::is_compatible(&annotated_exprs[i].clock, &annotated_exprs[j].clock) {
+                return Err(String::from(
+                    "The clocks of the expressions in an arrow construct should be the same",
+                ));
+            }
+            let clock_i = annotated_exprs[i].clock.clone();
+            let clock_j = annotated_exprs[j].clock.clone();
+            lower_clock(&mut annotated_exprs[i], &clock_j);
+            lower_clock(&mut annotated_exprs[j], &clock_i);
+        }
+    }
+    let clock = annotated_exprs[0].clock.clone();
+    Ok((ck::BaseExpr::Arrow(annotated_exprs), clock))
 }
 
 /// Lower clocks of an expression. This means that if the clock was Const,
@@ -318,9 +326,10 @@ fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
         ck::BaseExpr::Value(_) | ck::BaseExpr::Var(_) | ck::BaseExpr::Current(_, _) => (),
         ck::BaseExpr::When(_, _, _) => unreachable!(),
         ck::BaseExpr::Pre(_) => unreachable!(),
-        ck::BaseExpr::Arrow(e_1, e_2) => {
-            lower_clock(e_1, clock);
-            lower_clock(e_2, clock);
+        ck::BaseExpr::Arrow(exprs) => {
+            for expr in exprs {
+                lower_clock(expr, clock);
+            }
         }
         ck::BaseExpr::UnOp(_, box e) => lower_clock(e, clock),
         ck::BaseExpr::BinOp(_, box e1, box e2) => {

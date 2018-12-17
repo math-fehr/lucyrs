@@ -188,7 +188,15 @@ IfThenElse: Expr = {
 Arrow: Expr = {
     Merge => <>,
     <l:ConstValue> "fby" <r:Arrow> => Expr::Fby(l, box r),
-    <l:Merge> "->" <r:Arrow> => Expr::Arrow(box l, box r),
+    <ArrowConstruct> => Expr::Arrow(<>),
+}
+
+ArrowConstruct: Vec<Expr> = {
+    <v:(<Merge> "->")+> <l:Merge> => {
+        let mut v = v;
+        v.push(l);
+        v
+    }
 }
 
 Merge: Expr = {

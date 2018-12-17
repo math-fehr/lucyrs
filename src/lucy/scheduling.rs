@@ -96,9 +96,11 @@ fn get_node_deps<'a>(expr: &'a Expr) -> Vec<&'a str> {
             v.push(&fun);
             v
         }
-        Arrow(box e1, box e2) => {
-            let mut v = get_node_deps(&e1);
-            v.append(&mut get_node_deps(&e2));
+        Arrow(exprs) => {
+            let mut v = vec![];
+            for expr in exprs {
+                v.append(&mut get_node_deps(&expr));
+            }
             v
         }
     }
@@ -188,9 +190,11 @@ fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
             v
         }
         Current(s, _) => vec![s],
-        Arrow(box e1, box e2) => {
-            let mut v = get_var_deps(&e1, node);
-            v.append(&mut get_var_deps(&e2, node));
+        Arrow(exprs) => {
+            let mut v = vec![];
+            for expr in exprs {
+                v.append(&mut get_var_deps(&expr, node));
+            }
             v
         }
     }

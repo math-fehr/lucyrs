@@ -1,6 +1,6 @@
 //! Translate typed LucyRS AST into minils AST
 
-use crate::ast::{Clock, Type, Value};
+use crate::ast::{Clock, Type, Value, BinOp};
 use crate::ident::IdentGenerator;
 use crate::lucy::clock_typed_ast as typ;
 use crate::minils::ast as minils;
@@ -90,25 +90,8 @@ fn to_minils_expr(
             };
             minils::BaseExpr::Fby(value, box e)
         }
-        typ::BaseExpr::Arrow(box e_1, box e_2) => {
-            let clock = e_1.clock.clone();
-            let typ = e_1.typ.clone();
-            let false_expr = typ::Expr {
-                expr: typ::BaseExpr::Value(Value::Bool(false)),
-                typ: vec![Type::Bool],
-                clock: clock.clone(),
-            };
-            let cond_expr = typ::Expr {
-                expr: typ::BaseExpr::Fby(Value::Bool(true), box false_expr),
-                typ: vec![Type::Bool],
-                clock: clock.clone(),
-            };
-            let ifthenelse_expr = typ::Expr {
-                expr: typ::BaseExpr::IfThenElse(box cond_expr, box e_1, box e_2),
-                typ,
-                clock,
-            };
-            return to_minils_expr(ident, ifthenelse_expr, node);
+        typ::BaseExpr::Arrow(exprs) => {
+            return to_minils_arrow(ident, exprs, expr.clock.clone(), expr.typ[0].clone(), node);
         }
     };
     minils::Expr {
@@ -116,6 +99,68 @@ fn to_minils_expr(
         expr: expr_,
         clock: expr.clock,
     }
+}
+
+fn to_minils_arrow(
+    ident: &IdentGenerator,
+    exprs: Vec<typ::Expr>,
+    clock: Clock,
+    typ: Type,
+    node: &mut minils::Node,
+) -> minils::Expr {
+    let counter = ident.new_ident().get_ident();
+    let var_counter = minils::Expr {
+        expr: minils::BaseExpr::Var(counter.clone()),
+        typ: vec![Type::Int],
+        clock: clock.clone(),
+    };
+    let value_1 = minils::Expr {
+        expr: minils::BaseExpr::Value(Value::Int(1)),
+        typ: vec![Type::Int],
+        clock: clock.clone(),
+    };
+    let incr_counter = minils::Expr {
+        expr: minils::BaseExpr::BinOp(BinOp::Add, box var_counter, box value_1),
+        typ: vec![Type::Int],
+        clock: clock.clone(),
+    };
+    let counter_expr = minils::Expr {
+        expr: minils::BaseExpr::Fby(Value::Int(0), box incr_counter),
+        typ: vec![Type::Int],
+        clock: clock.clone(),
+    };
+    node.eq_list.push((vec![counter.clone()], counter_expr));
+
+    let var_counter = typ::Expr {
+        expr: typ::BaseExpr::Var(counter),
+        typ: vec![Type::Int],
+        clock: clock.clone(),
+    };
+    let counter_equal_i = |i| {
+        let value_i = typ::Expr {
+            expr: typ::BaseExpr::Value(Value::Int(i)),
+            typ: vec![Type::Int],
+            clock: clock.clone(),
+        };
+        typ::Expr {
+            expr: typ::BaseExpr::BinOp(BinOp::Eq, box var_counter.clone(), box value_i),
+            typ: vec![Type::Bool],
+            clock: clock.clone(),
+        }
+    };
+    let mut expr = typ::Expr {
+        expr: typ::BaseExpr::IfThenElse(box counter_equal_i((exprs.len()-2) as i32), box exprs[exprs.len()-2].clone(), box exprs[exprs.len()-1].clone()),
+        typ: vec![typ.clone()],
+        clock: clock.clone(),
+    };
+    for i in (0..exprs.len()-2).rev() {
+        expr = typ::Expr {
+            expr: typ::BaseExpr::IfThenElse(box counter_equal_i(i as i32), box exprs[i].clone(), box expr),
+            typ: vec![typ.clone()],
+            clock: clock.clone(),
+        }
+    }
+    to_minils_expr(ident, expr, node)
 }
 
 /// Translate a LucyRS current expression into a minils expression
