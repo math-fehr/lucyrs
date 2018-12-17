@@ -1,4 +1,5 @@
 use crate::ast::{Clock, Type, Value};
+use crate::ident::IdentGenerator;
 use crate::lucy::clock_typed_ast as typ;
 use crate::minils::ast as minils;
 
@@ -15,46 +16,59 @@ pub fn to_minils(node: typ::Node) -> minils::Node {
         eq_list: vec![],
     };
     for (idents, expr) in node.eq_list {
-        let expr = to_minils_expr(expr, &mut new_node);
+        let expr = to_minils_expr(
+            &IdentGenerator::new(idents[0].clone() + "_cond"),
+            expr,
+            &mut new_node,
+        );
         new_node.eq_list.push((idents, expr));
     }
     new_node
 }
 
-fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
+fn to_minils_expr(
+    ident: &IdentGenerator,
+    expr: typ::Expr,
+    node: &mut minils::Node,
+) -> minils::Expr {
     let expr_ = match expr.expr {
         typ::BaseExpr::Value(v) => minils::BaseExpr::Value(v),
         typ::BaseExpr::UnOp(op, box e1) => {
-            let e1 = to_minils_expr(e1, node);
+            let e1 = to_minils_expr(ident, e1, node);
             minils::BaseExpr::UnOp(op, box e1)
         }
         typ::BaseExpr::BinOp(op, box e1, box e2) => {
-            let e1 = to_minils_expr(e1, node);
-            let e2 = to_minils_expr(e2, node);
+            let e1 = to_minils_expr(ident, e1, node);
+            let e2 = to_minils_expr(ident, e2, node);
             minils::BaseExpr::BinOp(op, box e1, box e2)
         }
         typ::BaseExpr::Fby(e1, box e2) => {
-            let e2 = to_minils_expr(e2, node);
+            let e2 = to_minils_expr(ident, e2, node);
             minils::BaseExpr::Fby(e1, box e2)
         }
         typ::BaseExpr::When(box e, ck, b) => {
-            let e = to_minils_expr(e, node);
+            let e = to_minils_expr(ident, e, node);
             minils::BaseExpr::When(box e, ck, b)
         }
         typ::BaseExpr::Merge(ck, box e_t, box e_f) => {
-            let e_t = to_minils_expr(e_t, node);
-            let e_f = to_minils_expr(e_f, node);
+            let e_t = to_minils_expr(ident, e_t, node);
+            let e_f = to_minils_expr(ident, e_f, node);
             minils::BaseExpr::Merge(ck, box e_t, box e_f)
         }
-        typ::BaseExpr::IfThenElse(box e1, box e2, box e3) => {
-            let e1 = to_minils_expr(e1, node);
-            let e2 = to_minils_expr(e2, node);
-            let e3 = to_minils_expr(e3, node);
-            minils::BaseExpr::IfThenElse(box e1, box e2, box e3)
+        typ::BaseExpr::IfThenElse(box e_cond, box e_t, box e_f) => {
+            let e_cond = to_minils_expr(ident, e_cond, node);
+            let name_cond = ident.new_ident().get_ident();
+            node.eq_list.push((vec![name_cond.clone()], e_cond));
+            let e_t = to_minils_expr(ident, e_t, node);
+            let e_f = to_minils_expr(ident, e_f, node);
+            minils::BaseExpr::Merge(name_cond, box e_t, box e_f)
         }
         typ::BaseExpr::Var(s) => minils::BaseExpr::Var(s),
         typ::BaseExpr::FunCall(s, exprs, r) => {
-            let exprs = exprs.into_iter().map(|e| to_minils_expr(e, node)).collect();
+            let exprs = exprs
+                .into_iter()
+                .map(|e| to_minils_expr(ident, e, node))
+                .collect();
             minils::BaseExpr::FunCall(s, exprs, r)
         }
         typ::BaseExpr::Current(s, v) => {
@@ -62,7 +76,7 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
             to_minils_current(s, v, clock.clone(), expr.typ[0].clone(), node)
         }
         typ::BaseExpr::Pre(box e) => {
-            let e = to_minils_expr(e, node);
+            let e = to_minils_expr(ident, e, node);
             let value = match &e.typ[0] {
                 Type::Int => Value::Int(-12341234),
                 Type::Real => Value::Real(std::f32::NAN),
@@ -88,7 +102,7 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
                 typ,
                 clock,
             };
-            return to_minils_expr(ifthenelse_expr, node);
+            return to_minils_expr(ident, ifthenelse_expr, node);
         }
     };
     minils::Expr {

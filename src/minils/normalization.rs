@@ -84,13 +84,6 @@ fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Nod
             normalize_eq(&vec![new_ident.clone()], expr.clone(), node);
             return norm::ExprCA::new_var(new_ident.get_ident(), typ_, clock.clone());
         }
-        minils::BaseExpr::IfThenElse(box cond, box expr_true, box expr_false) => {
-            let new_ident = ident.new_ident();
-            normalize_eq(&vec![new_ident.clone()], cond, node);
-            let expr_true = normalize_ca(ident, expr_true, node);
-            let expr_false = normalize_ca(ident, expr_false, node);
-            norm::ExprCABase::Merge(new_ident.get_ident(), box expr_true, box expr_false)
-        }
         minils::BaseExpr::Merge(ck, box e_t, box e_f) => {
             let e_t = normalize_ca(ident, e_t, node);
             let e_f = normalize_ca(ident, e_f, node);
@@ -115,7 +108,6 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
     let expr_ = match expr.expr {
         minils::BaseExpr::FunCall(_, _, _)
         | minils::BaseExpr::Fby(_, _)
-        | minils::BaseExpr::IfThenElse(_, _, _)
         | minils::BaseExpr::Merge(_, _, _) => {
             let new_ident = ident.new_ident();
             normalize_eq(&vec![new_ident.clone()], expr.clone(), node);

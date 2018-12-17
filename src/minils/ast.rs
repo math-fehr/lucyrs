@@ -26,7 +26,6 @@ pub enum BaseExpr {
     Fby(Value, Box<Expr>),
     When(Box<Expr>, String, bool),
     Merge(String, Box<Expr>, Box<Expr>),
-    IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
     Var(String),
     FunCall(String, Vec<Expr>, Option<String>),
 }
