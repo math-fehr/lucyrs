@@ -1,3 +1,5 @@
+//! obc AST
+
 use crate::ast::{BinOp, Type, UnOp, Value};
 
 use std::collections::HashMap;

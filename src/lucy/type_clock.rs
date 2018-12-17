@@ -1,9 +1,12 @@
+//! Type the clocks of a typed LucyRS node
+
 use crate::ast::{BinOp, Clock, Type, Value};
 use crate::lucy::clock_typed_ast as ck;
 use crate::lucy::typed_ast as typ;
 
 use std::collections::HashMap;
 
+/// Annotate and check the validity of clocks in LucyRS typed nodes
 pub fn annotate_clocks(nodes: Vec<typ::Node>) -> Result<Vec<ck::Node>, String> {
     let mut clock_nodes = vec![];
     for node in nodes {
@@ -12,6 +15,7 @@ pub fn annotate_clocks(nodes: Vec<typ::Node>) -> Result<Vec<ck::Node>, String> {
     Ok(clock_nodes)
 }
 
+/// Annotate and check the validity of clocks in a single LucyRS typed node
 fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
     let mut variables = HashMap::new();
     for (var, typ) in &node.in_params {
@@ -48,6 +52,7 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
     })
 }
 
+/// Annotate the clocks for an expression
 fn annotate_expr(
     expr: typ::Expr,
     vars: &HashMap<String, (Type, Clock)>,
@@ -298,6 +303,8 @@ fn annotate_arrow(
     Ok((ck::BaseExpr::Arrow(box expr_1, box expr_2), clock))
 }
 
+/// Lower clocks of an expression. This means that if the clock was Const,
+/// It is changed to the given clock.
 fn lower_clock(expr: &mut ck::Expr, clock: &Clock) {
     if let Clock::Const = clock {
         return;

@@ -1,3 +1,5 @@
+//! AST for typed LucyRS without clock annotations
+
 use crate::ast::{BinOp, Type, UnOp, Value, Clock};
 
 use std::collections::HashMap;

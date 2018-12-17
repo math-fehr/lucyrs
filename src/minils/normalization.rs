@@ -1,3 +1,8 @@
+//! Normalize a minils program. This is simplifying the minils translation
+//! into obc. In this module, many identifiers are created. The IdentGenerator
+//! struct is used to generate new identifiers that will not collide with existing
+//! identifiers.
+
 use crate::ast::Clock;
 use crate::ident;
 use crate::ident::IdentGenerator;
@@ -6,6 +11,7 @@ use crate::minils::normalized_ast as norm;
 
 use std::collections::HashMap;
 
+/// Normalize a minils node
 pub fn normalize(node: minils::Node) -> norm::Node {
     let name = ident::gen_ident(node.name, 0);
     let add_suffix_fst = |(ident, t)| (ident::gen_ident(ident, 0), t);
@@ -25,6 +31,7 @@ pub fn normalize(node: minils::Node) -> norm::Node {
     normalized_node
 }
 
+/// Normalize an assignment into an eq normalized minils node
 fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut norm::Node) {
     let typ_ = expr.typ.clone();
     let clock = gen_clock_ident(expr.clock.clone());
@@ -74,6 +81,7 @@ fn normalize_eq(idents: &Vec<IdentGenerator>, expr: minils::Expr, node: &mut nor
     });
 }
 
+/// Normalize an expression into an ca normalized minils node
 fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node) -> norm::ExprCA {
     assert!(expr.typ.len() == 1);
     let typ_ = expr.typ[0].clone();
@@ -101,6 +109,7 @@ fn normalize_ca(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Nod
     }
 }
 
+/// Normalize an assignment into an a normalized minils node
 fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node) -> norm::ExprA {
     assert!(expr.typ.len() == 1);
     let typ_ = expr.typ[0].clone();
@@ -136,6 +145,8 @@ fn normalize_a(ident: &IdentGenerator, expr: minils::Expr, node: &mut norm::Node
     }
 }
 
+/// Generate identifiers for clocks. This is required because in this module,
+/// all identifiers change.
 fn gen_clock_ident(ck: Clock) -> Clock {
     match ck {
         Clock::Const => Clock::Const,

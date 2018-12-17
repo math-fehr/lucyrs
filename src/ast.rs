@@ -1,3 +1,6 @@
+//! Contains some part of the AST that are common in the different parts of the compiler
+
+/// Binary operation type
 #[derive(Debug, Clone)]
 pub enum BinOp {
     Lt,
@@ -17,12 +20,14 @@ pub enum BinOp {
     Eq,
 }
 
+/// Unary operation type
 #[derive(Debug, Clone)]
 pub enum UnOp {
     Not,
     UMinus,
 }
 
+/// Different types of the synchronous language
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
@@ -30,6 +35,7 @@ pub enum Type {
     Bool,
 }
 
+/// Constant values
 #[derive(Debug, Clone)]
 pub enum Value {
     Bool(bool),
@@ -38,6 +44,7 @@ pub enum Value {
 }
 
 impl Value {
+    /// Get the type of a constant
     pub fn get_type(&self) -> Type {
         match &self {
             Value::Bool(_) => Type::Bool,
@@ -47,6 +54,8 @@ impl Value {
     }
 }
 
+/// A clock used in the synchronous language
+/// Const means that it refer to a statically computable expression
 #[derive(Debug, Clone, PartialEq)]
 pub enum Clock {
     Const,
@@ -54,6 +63,8 @@ pub enum Clock {
 }
 
 impl Clock {
+    /// Check if two clocks are compatible
+    /// Two clocks are compatible is they are equals, or if one of them is const
     pub fn is_compatible(clock1: &Clock, clock2: &Clock) -> bool {
         match clock1 {
             Clock::Const => true,
@@ -64,6 +75,7 @@ impl Clock {
         }
     }
 
+    /// Check is the clock is faster or equal than the given clock
     pub fn is_faster_or_equal_than(&self, clock: &Clock) -> bool {
         match &self {
             Clock::Const => true,

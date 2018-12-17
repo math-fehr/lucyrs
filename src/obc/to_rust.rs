@@ -1,7 +1,10 @@
+//! Contains functions to translate obc into Rust
+
 use crate::ast::{BinOp, Type, UnOp, Value};
 use crate::ident;
 use crate::obc::ast::{Expr, Machine, Stmt};
 
+/// Translate an obc program into Rust, given an entry machine
 pub fn obc_to_rust(machines: &Vec<Machine>, entry_machine: &str) -> String {
     let entry_machine = machines
         .iter()
@@ -13,6 +16,7 @@ pub fn obc_to_rust(machines: &Vec<Machine>, entry_machine: &str) -> String {
     })
 }
 
+/// Generate the rust main code of the generated Rust program
 fn get_rust_main(machine: &Machine) -> String {
     let mut main = String::from("use std::io::{self, Read};\n");
     main += "fn main() {\n";
@@ -60,6 +64,7 @@ fn get_rust_main(machine: &Machine) -> String {
     main + "}\n"
 }
 
+/// Generate the code for a machine in Rust
 fn machine_to_rust(machine: &Machine) -> String {
     let mut machine_str = get_struct_definition(machine);
     machine_str += "\n";
@@ -67,6 +72,7 @@ fn machine_to_rust(machine: &Machine) -> String {
     machine_str
 }
 
+/// Generate the machine struct definition in Rust
 fn get_struct_definition(machine: &Machine) -> String {
     let mut def = format!("#[derive(Default, Debug)]\n");
     def += &format!("struct {} {{\n", machine.name);
@@ -80,6 +86,7 @@ fn get_struct_definition(machine: &Machine) -> String {
     def
 }
 
+/// Generate the step and reset functions of a machine in Rust
 fn get_functions_definition(machine: &Machine) -> String {
     let mut def = format!("impl {} {{\n", machine.name);
     def += &get_reset_definition(machine);
@@ -89,6 +96,7 @@ fn get_functions_definition(machine: &Machine) -> String {
     def
 }
 
+/// Generate the reset function of a machine in Rust
 fn get_reset_definition(machine: &Machine) -> String {
     let mut def = format!("    pub fn reset(&mut self) {{\n");
     for (memory, value) in &machine.memory {
@@ -101,6 +109,7 @@ fn get_reset_definition(machine: &Machine) -> String {
     def
 }
 
+/// Generate the step function of a machine in Rust
 fn get_step_definition(machine: &Machine) -> String {
     let inputs = machine
         .step_inputs
@@ -140,6 +149,7 @@ fn get_step_definition(machine: &Machine) -> String {
     def
 }
 
+/// Compile an obc statement into Rust
 fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
     let indent = " ".repeat((n_indent as usize) * 4);
     match stmt {
@@ -188,6 +198,7 @@ fn stmt_to_rust(machine: &Machine, stmt: &Stmt, n_indent: i32) -> String {
     }
 }
 
+/// Generate an obc expression in Rust
 fn expr_to_rust(expr: &Expr) -> String {
     match expr {
         Expr::Var(s) => s.clone(),
@@ -209,6 +220,7 @@ fn expr_to_rust(expr: &Expr) -> String {
     }
 }
 
+/// Generate an unary operator in Rust
 fn unop_to_rust(op: &UnOp) -> String {
     match op {
         UnOp::Not => String::from("!"),
@@ -216,6 +228,7 @@ fn unop_to_rust(op: &UnOp) -> String {
     }
 }
 
+/// Generate a binary operator in Rust
 fn binop_to_rust(op: &BinOp) -> String {
     match op {
         BinOp::Lt => String::from("<"),
@@ -236,6 +249,7 @@ fn binop_to_rust(op: &BinOp) -> String {
     }
 }
 
+/// Translate a type into Rust
 fn type_to_rust(typ: &Type) -> String {
     match typ {
         Type::Int => String::from("i32"),
@@ -244,6 +258,7 @@ fn type_to_rust(typ: &Type) -> String {
     }
 }
 
+/// Translate a value into Rust
 fn value_to_rust(val: &Value) -> String {
     match val {
         Value::Int(i) => i.to_string(),

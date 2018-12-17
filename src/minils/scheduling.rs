@@ -1,8 +1,11 @@
+//! Schedule normalized minils nodes
+
 use crate::minils::normalized_ast::*;
 
 use petgraph::graphmap::GraphMap;
 use std::collections::HashSet;
 
+/// Schedule normalized minils nodes
 pub fn schedule(mut node: Node) -> Node {
     // When this function is called, the program should
     // not define a variable twice
@@ -12,6 +15,7 @@ pub fn schedule(mut node: Node) -> Node {
     node
 }
 
+/// Check if a variable is defined multiple times
 fn check_multiple_definition(node: &Node) -> bool {
     let mut set = HashSet::new();
     for eq in &node.eq_list {
@@ -25,6 +29,7 @@ fn check_multiple_definition(node: &Node) -> bool {
     true
 }
 
+/// Schedule a normalized minils node
 fn schedule_node(node: &mut Node) {
     let mut causality_graph = GraphMap::<usize, (), petgraph::Directed>::new();
     for i in 0..node.eq_list.len() {
@@ -53,6 +58,7 @@ fn schedule_node(node: &mut Node) {
         .collect();
 }
 
+/// Get the defined variables in a minils normalized eq
 fn get_defined_vars(eq: &Eq) -> Vec<&str> {
     match &eq.eq {
         ExprEqBase::Fby(_, _, _) => vec![],
@@ -61,6 +67,7 @@ fn get_defined_vars(eq: &Eq) -> Vec<&str> {
     }
 }
 
+/// Normalize an assignment into an eq normalized minils node
 fn get_var_dependencies_eq(eq: &Eq) -> Vec<&str> {
     match &eq.eq {
         ExprEqBase::Fby(_, _, box a) => get_var_dependencies_a(a),
@@ -79,6 +86,7 @@ fn get_var_dependencies_eq(eq: &Eq) -> Vec<&str> {
     }
 }
 
+/// Normalize an assignment into an eq normalized ca
 fn get_var_dependencies_ca(ca: &ExprCA) -> Vec<&str> {
     match &ca.expr {
         ExprCABase::Merge(s, box ca_1, box ca_2) => {
@@ -92,6 +100,7 @@ fn get_var_dependencies_ca(ca: &ExprCA) -> Vec<&str> {
     }
 }
 
+/// Normalize an assignment into an eq normalized a
 fn get_var_dependencies_a(a: &ExprA) -> Vec<&str> {
     match &a.expr {
         ExprABase::Value(_) => vec![],

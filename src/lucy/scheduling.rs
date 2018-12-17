@@ -1,9 +1,14 @@
+//! Functions to schedule untyped LucyRS nodes, and check if there
+//! is multiple definitions of variables
+
 use crate::lucy::ast::Expr::*;
 use crate::lucy::ast::{Expr, Node};
 
 use petgraph::graphmap::GraphMap;
 use std::collections::HashSet;
 
+/// Schedule the untyped LucyRS nodes
+/// Also, check if there is multiple definitions of variables in nodes
 pub fn schedule(nodes: &mut Vec<Node>) -> bool {
     for node in nodes {
         if !check_multiple_definition(node) {
@@ -16,6 +21,7 @@ pub fn schedule(nodes: &mut Vec<Node>) -> bool {
     true
 }
 
+/// Check if there is multiple definitions of variables
 fn check_multiple_definition(node: &Node) -> bool {
     let mut set = HashSet::new();
     for eq in &node.eq_list {
@@ -29,6 +35,7 @@ fn check_multiple_definition(node: &Node) -> bool {
     true
 }
 
+/// Check if the node is causal, and schedule it if it is
 fn check_causality_node(node: &mut Node) -> bool {
     let mut causality_graph = GraphMap::<usize, (), petgraph::Directed>::new();
     for i in 0..node.eq_list.len() {
@@ -63,6 +70,7 @@ fn check_causality_node(node: &mut Node) -> bool {
     }
 }
 
+/// Get the var dependencies of an expression
 fn get_var_deps<'a>(expr: &'a Expr, node: &'a Node) -> Vec<&'a str> {
     match expr {
         Value(_) | Fby(_, _) | Pre(_) => vec![],

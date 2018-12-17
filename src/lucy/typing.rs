@@ -1,13 +1,18 @@
+//! Check and type untyped LucyRS nodes
+
 use crate::ast::{BinOp, Type, UnOp, Value};
 use crate::lucy::ast;
 use crate::lucy::typed_ast::{BaseExpr, Expr, Node};
 use std::collections::HashMap;
 
+/// Context used in the module functions
+/// It keep tracks of the variables types, and the nodes types
 struct Context<'a> {
     variables: &'a HashMap<String, Type>,
     functions: &'a HashMap<String, (Vec<Type>, Vec<Type>)>,
 }
 
+/// Annotate the types of a list of nodes
 pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
     let mut functions = HashMap::new();
     let take_types = |vec: &Vec<(String, Type)>| vec.iter().map(|(_, t)| t.clone()).collect();
@@ -32,6 +37,7 @@ pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
     Ok(typed_nodes)
 }
 
+/// Type a node
 pub fn type_node(
     node: ast::Node,
     functions: &HashMap<String, (Vec<Type>, Vec<Type>)>,
@@ -81,6 +87,7 @@ pub fn type_node(
     Ok(node)
 }
 
+/// Type an expression
 fn type_expr(expr: ast::Expr, context: &Context) -> Result<Expr, String> {
     match expr {
         ast::Expr::Value(v) => Ok(type_value(v)),

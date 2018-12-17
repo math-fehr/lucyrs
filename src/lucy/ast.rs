@@ -1,3 +1,5 @@
+//! Contains the untyped AST for the LucyRS language
+
 use crate::ast::{BinOp, Type, UnOp, Value, Clock};
 
 use std::collections::HashMap;

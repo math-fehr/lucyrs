@@ -1,8 +1,11 @@
+//! Translate typed LucyRS AST into minils AST
+
 use crate::ast::{Clock, Type, Value};
 use crate::ident::IdentGenerator;
 use crate::lucy::clock_typed_ast as typ;
 use crate::minils::ast as minils;
 
+/// Translate a typed LucyRS AST into minils AST
 pub fn to_minils(node: typ::Node) -> minils::Node {
     let name = node.name;
     let in_params = node.in_params;
@@ -26,6 +29,9 @@ pub fn to_minils(node: typ::Node) -> minils::Node {
     new_node
 }
 
+/// Translate a typed LucyRS expression into minils expression
+/// This function remove some syntaxic sugar from LucyRS,
+/// like if_then_else construct, or pre, or arrow
 fn to_minils_expr(
     ident: &IdentGenerator,
     expr: typ::Expr,
@@ -112,6 +118,7 @@ fn to_minils_expr(
     }
 }
 
+/// Translate a LucyRS current expression into a minils expression
 fn to_minils_current(
     ident: String,
     value: Value,
@@ -178,6 +185,7 @@ fn to_minils_current(
     }
 }
 
+/// Introduce nested when in an expression that has clock base, to match the given clock
 fn nested_when(expr: minils::Expr, clock: Clock) -> minils::Expr {
     if let Clock::Ck(v) = &expr.clock {
         if v.len() != 0 {

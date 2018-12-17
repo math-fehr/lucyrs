@@ -1,3 +1,5 @@
+//! Compile a normalized scheduled minils program into obc.
+
 use crate::ast::{Clock, Type, Value};
 use crate::ident;
 use crate::minils::normalized_ast as norm;
@@ -5,6 +7,7 @@ use crate::obc::ast as obc;
 
 use std::collections::HashMap;
 
+/// Compile a normalized scheduled minils program into obc.
 pub fn to_obc(node: norm::Node) -> obc::Machine {
     let memory = get_memories(&node);
     let name = node.name;
@@ -61,6 +64,7 @@ pub fn to_obc(node: norm::Node) -> obc::Machine {
     }
 }
 
+/// Get the needed registers in a node for memories
 fn get_memories(node: &norm::Node) -> HashMap<String, (Value, Clock)> {
     let mut memory = HashMap::new();
     for eq in &node.eq_list {
@@ -74,6 +78,7 @@ fn get_memories(node: &norm::Node) -> HashMap<String, (Value, Clock)> {
     memory
 }
 
+/// Translate a normalized minils eq into obc, and add the statements in step_stmts
 fn eq_to_obc(
     eq: norm::Eq,
     memory: &HashMap<String, (Value, Clock)>,
@@ -120,6 +125,7 @@ fn eq_to_obc(
     };
 }
 
+/// Add control over a statement, until it is executed relatively to clock
 fn add_control(mut stmt: obc::Stmt, clock: Clock) -> obc::Stmt {
     match clock {
         Clock::Const => (),
@@ -136,6 +142,7 @@ fn add_control(mut stmt: obc::Stmt, clock: Clock) -> obc::Stmt {
     stmt
 }
 
+/// Translate a normalized minils ca into obc
 fn ca_to_obc(
     lhs: String,
     expr: norm::ExprCA,
@@ -156,6 +163,7 @@ fn ca_to_obc(
     }
 }
 
+/// Translate a normalized minils a into obc
 fn a_to_obc(
     expr: norm::ExprA,
     memory: &HashMap<String, (Value, Clock)>,

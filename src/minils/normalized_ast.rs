@@ -1,3 +1,5 @@
+//! AST for normalized minils
+
 use crate::ast::{BinOp, Clock, Type, UnOp, Value};
 
 use std::collections::HashMap;
