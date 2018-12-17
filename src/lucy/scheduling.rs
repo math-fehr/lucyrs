@@ -13,30 +13,29 @@ use std::collections::HashSet;
 pub fn schedule(nodes: Vec<Node>) -> Result<Vec<Node>, String> {
     let mut nodes = schedule_nodes(nodes)?;
     for node in &mut nodes {
-        if !check_multiple_definition(node) {
-            return Err(String::from(
-                "A variable was defined multiple times in a node",
-            ));
-        }
-        if !check_causality_node(node) {
-            return Err(String::from("A node is not causal"));
+        check_multiple_definition(node)?;
+        match check_causality_node(node) {
+            Ok(_) => (),
+            Err(message) => {
+                return Err(format!("Node {} is not causal: {}", node.name, message));
+            }
         }
     }
     Ok(nodes)
 }
 
 /// Check if there is multiple definitions of variables
-fn check_multiple_definition(node: &Node) -> bool {
+fn check_multiple_definition(node: &Node) -> Result<(), String> {
     let mut set = HashSet::new();
     for eq in &node.eq_list {
         for ident in &eq.0 {
             if set.get(ident).is_some() {
-                return false;
+                return Err(format!("{} was defined twice in node {}", ident, node.name));
             }
             set.insert(ident);
         }
     }
-    true
+    Ok(())
 }
 
 fn schedule_nodes(nodes: Vec<Node>) -> Result<Vec<Node>, String> {
@@ -54,14 +53,15 @@ fn schedule_nodes(nodes: Vec<Node>) -> Result<Vec<Node>, String> {
         }
     }
     let topo_sort = petgraph::algo::toposort(&causality_graph, None);
-    if let Ok(topo_sort) = topo_sort {
-        let nodes = topo_sort
+    match topo_sort {
+        Ok(topo_sort) => Ok(topo_sort
             .into_iter()
             .map(|node| (*nodes_hm.get(&node).unwrap()).clone())
-            .collect();
-        Ok(nodes)
-    } else {
-        Err(String::from("There is a cyclic call between the nodes"))
+            .collect()),
+        Err(cycle) => Err(format!(
+            "There is a cyclic call between the nodes. {} participates in the cycle",
+            cycle.node_id()
+        )),
     }
 }
 
@@ -106,7 +106,7 @@ fn get_node_deps<'a>(expr: &'a Expr) -> Vec<&'a str> {
 }
 
 /// Check if the node is causal, and schedule it if it is
-fn check_causality_node(node: &mut Node) -> bool {
+fn check_causality_node(node: &mut Node) -> Result<(), String> {
     let mut causality_graph = GraphMap::<usize, (), petgraph::Directed>::new();
     for i in 0..node.eq_list.len() {
         causality_graph.add_node(i);
@@ -129,14 +129,17 @@ fn check_causality_node(node: &mut Node) -> bool {
         }
     }
     let topo_sort = petgraph::algo::toposort(&causality_graph, None);
-    if let Ok(topo_sort) = topo_sort {
-        node.eq_list = topo_sort
-            .into_iter()
-            .map(|i| node.eq_list[i].clone())
-            .collect();
-        true
-    } else {
-        false
+    match topo_sort {
+        Ok(topo_sort) => {
+            node.eq_list = topo_sort
+                .into_iter()
+                .map(|i| node.eq_list[i].clone())
+                .collect();
+            Ok(())
+        },
+        Err(cycle) => {
+            Err(format!("The is a cycle in variables definitions: one variable assigned next to {} is in the cycle", node.eq_list[cycle.node_id()].0[0]))
+        }
     }
 }
 

@@ -32,7 +32,11 @@ pub fn annotate_types(nodes: Vec<ast::Node>) -> Result<Vec<Node>, String> {
     }
     let mut typed_nodes = vec![];
     for node in nodes {
-        typed_nodes.push(type_node(node, &functions)?);
+        let node_name = node.name.clone();
+        match type_node(node, &functions) {
+            Ok(node) => typed_nodes.push(node),
+            Err(message) => {return Err(format!("Error while typing node {}: {}", node_name, message))}
+        }
     }
     Ok(typed_nodes)
 }
@@ -46,9 +50,7 @@ pub fn type_node(
     let mut add_variables = |list: &Vec<(String, Type)>| -> Result<(), String> {
         for (ident, typ) in list {
             if variables.contains_key(ident) {
-                return Err(String::from(
-                    "Cannot declare two variables with the same name in a node",
-                ));
+                return Err(format!("The variable {} was declared twice", ident));
             } else {
                 variables.insert(ident.clone(), typ.clone());
             }
@@ -59,9 +61,7 @@ pub fn type_node(
     add_variables(&node.out_params)?;
     for (ident, (typ, _)) in &node.local_params {
         if variables.contains_key(ident) {
-            return Err(String::from(
-                "Cannot declare two variables with the same name in a node",
-            ));
+            return Err(format!("The variable {} was declared twice", ident));
         } else {
             variables.insert(ident.clone(), typ.clone());
         }

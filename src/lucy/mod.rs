@@ -22,7 +22,11 @@ pub fn parse_file(filename: &str) -> Vec<ast::Node> {
     let mut contents = String::new();
     f.read_to_string(&mut contents)
         .expect(&("Error while loading file ".to_owned() + filename));
-    grammar::FileParser::new().parse(&contents).unwrap()
+    let nodes = grammar::FileParser::new().parse(&contents);
+    if let Err(message) = nodes {
+        panic!(format!("Parser Error: {}", message));
+    }
+    nodes.unwrap()
 }
 
 /// Type the LucyRS nodes

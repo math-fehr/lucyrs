@@ -1,4 +1,9 @@
 node check(x : int) returns (y : int);
 let
+  y = check2(x);
+tel;
+
+node check2(x : int) returns (y : int);
+let
   y = check(x);
 tel;
