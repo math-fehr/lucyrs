@@ -51,7 +51,7 @@ pub fn type_node(
     };
     add_variables(&node.in_params)?;
     add_variables(&node.out_params)?;
-    for (ident, typ, _) in &node.local_params {
+    for (ident, (typ, _)) in &node.local_params {
         if variables.contains_key(ident) {
             return Err(String::from(
                 "Cannot declare two variables with the same name in a node",

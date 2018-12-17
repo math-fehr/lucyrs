@@ -20,8 +20,8 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
     for (var, typ) in &node.out_params {
         variables.insert(var.clone(), (typ.clone(), Clock::Ck(vec![])));
     }
-    for (var, typ, ck) in &node.local_params {
-        variables.insert(var.clone(), (typ.clone(), Clock::Ck(ck.clone())));
+    for (var, (typ, ck)) in &node.local_params {
+        variables.insert(var.clone(), (typ.clone(), ck.clone()));
     }
 
     let mut eq_list = vec![];
@@ -39,16 +39,11 @@ fn annotate_clocks_node(node: typ::Node) -> Result<ck::Node, String> {
         }
         eq_list.push((vars, expr));
     }
-    let local_params = node
-        .local_params
-        .into_iter()
-        .map(|(s, t, ck)| (s, t, Clock::Ck(ck)))
-        .collect();
     Ok(ck::Node {
         name: node.name,
         in_params: node.in_params,
         out_params: node.out_params,
-        local_params,
+        local_params: node.local_params,
         eq_list,
     })
 }

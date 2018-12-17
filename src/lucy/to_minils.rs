@@ -58,12 +58,8 @@ fn to_minils_expr(expr: typ::Expr, node: &mut minils::Node) -> minils::Expr {
             minils::BaseExpr::FunCall(s, exprs, r)
         }
         typ::BaseExpr::Current(s, v) => {
-            let clock = node
-                .local_params
-                .iter()
-                .find(|(s_, _, _)| s_ == &s)
-                .unwrap();
-            to_minils_current(s, v, clock.2.clone(), expr.typ[0].clone(), node)
+            let clock = &node.local_params.get(&s).unwrap().1;
+            to_minils_current(s, v, clock.clone(), expr.typ[0].clone(), node)
         }
         typ::BaseExpr::Pre(box e) => {
             let e = to_minils_expr(e, node);

@@ -1,11 +1,13 @@
 use crate::ast::{BinOp, Clock, Type, UnOp, Value};
 
+use std::collections::HashMap;
+
 #[derive(Debug, Clone)]
 pub struct Node {
     pub name: String,
     pub in_params: Vec<(String, Type)>,
     pub out_params: Vec<(String, Type)>,
-    pub local_params: Vec<(String, Type, Clock)>,
+    pub local_params: HashMap<String, (Type, Clock)>,
     pub eq_list: Vec<(Vec<String>, Expr)>,
 }
 

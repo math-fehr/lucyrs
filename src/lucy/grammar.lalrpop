@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use crate::lucy::ast::{Node,Expr};
-use crate::ast::{Type,Value,UnOp,BinOp};
+use crate::ast::{Type,Value,UnOp,BinOp,Clock};
+
+use std::collections::HashMap;
 
 grammar;
 
@@ -93,19 +95,19 @@ Node: Node = {
         };
         let ip = flatten(ip);
         let op = flatten(op);
-        let mut lp_ = vec![];
+        let mut lp_ = HashMap::new();
         for sub_v in lp {
             let t = sub_v.1;
             let ck = sub_v.2;
             for name in sub_v.0 {
-                lp_.push((name, t.clone(), ck.clone()));
+                lp_.insert(name, (t.clone(), ck.clone()));
             }
         }
         Node{name:i, in_params:ip, out_params:op, local_params:lp_, eq_list:el}
     }
 }
 
-LocalParams: Vec<(Vec<String>, Type, Vec<(String,bool)>)> = {
+LocalParams: Vec<(Vec<String>, Type, Clock)> = {
     "var" <ParamListSemiCol> => <>,
     () => vec![],
 }
@@ -119,19 +121,19 @@ InParams: Vec<(Vec<String>, Type)> = {
     }
 }
 
-ParamListSemiCol: Vec<(Vec<String>, Type, Vec<(String, bool)>)> = {
+ParamListSemiCol: Vec<(Vec<String>, Type, Clock)> = {
     <p:(<ParamAndClock> ";")+> => p
 }
 
-ParamAndClock: (Vec<String>, Type, Vec<(String, bool)>) = {
+ParamAndClock: (Vec<String>, Type, Clock) = {
     <p:Param> <ck:OptionalClock> => (p.0,p.1,ck),
 }
 
-OptionalClock: Vec<(String, bool)> = {
+OptionalClock: Clock = {
     <Clock?> => { if let Some(v) = <> {
-        v
+        Clock::Ck(v)
     } else {
-        vec![]
+        Clock::Ck(vec![])
     }
     }
 }
