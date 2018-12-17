@@ -37,7 +37,7 @@ fn merge_stmts(stmt_1: Stmt, stmt_2: Stmt) -> Stmt {
             v1_t.append(&mut v2_t);
             let v1 = merge_near_control(v1_t);
             v1_f.append(&mut v2_f);
-            let v2 = merge_near_control(v2_t);
+            let v2 = merge_near_control(v1_f);
             Stmt::Control(ck, v1, v2)
         }
         (_, _) => unreachable!(),
